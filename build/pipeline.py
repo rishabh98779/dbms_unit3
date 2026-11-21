@@ -1,7 +1,7 @@
 import re, subprocess, pymupdf, json, sys
 
 parts=['part00_cover.html','part01_transactions.html','part02_serializability.html','part03_recoverability.html',
-       'part04_locking.html','part05_timestamp.html','part06_recovery.html','part07_plsql.html','part08_final.html']
+       'part04_locking.html','part05_timestamp.html','part06_recovery.html','part07_plsql.html','part08_query.html','part08_final.html']
 html=''.join(open(p).read() for p in parts)
 open('notes.html','w').write(html)
 

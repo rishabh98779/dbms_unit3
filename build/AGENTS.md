@@ -11,7 +11,7 @@
 
 ## Commands
 ```bash
-python pipeline.py     # build final_raw.pdf (19 pages)
+python pipeline.py     # build final_raw.pdf (21 pages)
 python stamp.py        # write /workspace/project/DBMS_One_Day_Exam_Notes.pdf
 python docx_build.py   # write /workspace/project/DBMS_One_Day_Exam_Notes.docx
 ```

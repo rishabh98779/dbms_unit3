@@ -1,6 +1,6 @@
-<!-- ================= 12 FINAL REVISION ================= -->
+<!-- ================= 13 FINAL REVISION ================= -->
 <section>
-<h2 class="sec"><span class="num">12</span><span class="mk">§S12</span> Final Revision <span class="sub">read this last</span></h2>
+<h2 class="sec"><span class="num">13</span><span class="mk">§S13</span> Final Revision <span class="sub">read this last</span></h2>
 
 <h3>Topic checklist — one line each</h3>
 <table class="split">
@@ -20,6 +20,7 @@
     <tr><td>☐</td><td class="k">Checkpoint &amp; shadow paging</td><td>Checkpoint shortens recovery; shadow paging keeps two page tables.</td></tr>
     <tr><td>☐</td><td class="k">Procedures vs functions</td><td>Procedure = action, no RETURN value; function = must RETURN a value.</td></tr>
     <tr><td>☐</td><td class="k">Triggers</td><td>Fires automatically on DML/DDL/database events; row-level has :OLD and :NEW.</td></tr>
+    <tr><td>☐</td><td class="k">Query processing</td><td>Parse → translate → optimize → evaluate; push selections down, avoid Cartesian products, join the smallest pair first.</td></tr>
     <tr><td>☐</td><td class="k">Packages</td><td>Spec (public interface) + body (code, private items); session-long variables.</td></tr>
   </tbody>
 </table>
@@ -55,6 +56,8 @@
     <tr><td class="k">Optimistic</td><td>read_set, write_set, 3 phases, 3 validation conditions</td></tr>
     <tr><td class="k">Trigger</td><td>BEFORE|AFTER|INSTEAD OF + event + ON table + FOR EACH ROW + WHEN</td></tr>
     <tr><td class="k">Package call</td><td><span class="mono">package_name.element_name</span></td></tr>
+    <tr><td class="k">Selectivity</td><td>σ<sub>A=v</sub>(r) ≈ n<sub>r</sub> / V(A, r)</td></tr>
+    <tr><td class="k">Join cost</td><td>block nested loop b<sub>r</sub>·b<sub>s</sub> + b<sub>r</sub>; hash join 3(b<sub>r</sub> + b<sub>s</sub>)</td></tr>
     <tr><td class="k">Parameter modes</td><td>IN (read-only, by reference), OUT, IN OUT (by value)</td></tr>
   </tbody>
 </table>
@@ -72,6 +75,7 @@
   <li>Log rule: commit ⇒ redo, no commit ⇒ undo; undo first.</li>
   <li>Checkpoint writes log + buffers and records the address.</li>
   <li>Procedure vs function, row vs table trigger, spec vs body.</li>
+  <li>Query processing: parse → translate → optimize → evaluate; push selections down, avoid ×.</li>
 </ol>
 </div>
 </div>
@@ -96,16 +100,18 @@
     <tr><td class="k">3.3.1</td><td>Introduction to recovery, failure types, log, deferred/immediate, backups</td><td>8</td><td>Merged with 3.3.2–3.3.3</td></tr>
     <tr><td class="k">3.3.2</td><td>Types of errors, recovery techniques</td><td>8</td><td>Merged; error table</td></tr>
     <tr><td class="k">3.3.3</td><td>Recovery techniques, checkpoints, shadow paging</td><td>8</td><td>Merged; checkpoint diagrams</td></tr>
+    <tr><td class="k">—</td><td>Query processing and optimization (supplementary, not in the source)</td><td>12</td><td>Added on request; cost formulas from the standard model</td></tr>
   </tbody>
 </table>
 <p class="small" style="margin-top:0">The source repeats the same recovery material across three chapters, so 3.3.1–3.3.3 are merged into one section. Reference lists, repeated introductions and duplicated explanations were removed.</p>
 
-<h3>Answer skeletons for the three big 10-mark questions</h3>
+<h3>Answer skeletons for the four big 10-mark questions</h3>
 <table style="font-size:7.6pt">
   <thead><tr><th style="width:24%">Question</th><th style="width:46%">Write these headings, in this order</th><th style="width:30%">Finish with</th></tr></thead>
   <tbody>
     <tr><td class="k">Explain database recovery techniques</td><td>1 Failure classification → 2 Log records and write-ahead rule → 3 Deferred vs immediate modification → 4 Undo and redo lists → 5 Checkpoint with diagram → 6 Shadow paging and backup types</td><td>One line: recovery guarantees atomicity and durability.</td></tr>
     <tr><td class="k">Explain concurrency control</td><td>1 Four problems with examples → 2 Serializability and precedence graph → 3 Lock-based: 2PL, strict 2PL → 4 Timestamp ordering rules → 5 Optimistic three phases</td><td>Comparison line: locking waits, TO and optimistic abort.</td></tr>
+    <tr><td class="k">Explain query processing and optimization</td><td>1 Four steps with diagram → 2 Cost model and catalog statistics → 3 Heuristic rules → 4 Selection and join algorithms with costs → 5 Cost-based optimization → 6 Worked plan comparison</td><td>One line: optimization changes cost, never the answer.</td></tr>
     <tr><td class="k">Explain PL/SQL subprograms</td><td>1 Subprogram definition → 2 Procedure syntax and characteristics → 3 Function syntax and characteristics → 4 Parameter modes → 5 Trigger syntax with OLD/NEW → 6 Package specification and body</td><td>Comparison table: procedure vs function.</td></tr>
   </tbody>
 </table>
@@ -127,7 +133,7 @@
   <div>
     <h4>The last hour</h4>
     <ol class="tight">
-      <li>Re-draw the four diagrams from memory and check them against Sections 2, 5 and 8.</li>
+      <li>Re-draw the five diagrams from memory and check them against Sections 2, 5, 8 and 12.</li>
       <li>Recite the ten-minute recall list aloud without looking.</li>
       <li>Re-read the traps box above — these are the marks students lose most often.</li>
       <li>Stop. Do not open a new topic.</li>
@@ -142,6 +148,7 @@
       <li>Apply the timestamp read/write rules to one conflict.</li>
       <li>Draw the crash-recovery flow with undo and redo.</li>
       <li>Write a trigger and a package specification from memory.</li>
+      <li>Cost two plans for the same two-table join.</li>
     </ul>
   </div>
 </div>

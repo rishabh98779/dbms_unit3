@@ -1,0 +1,150 @@
+<!-- ================= 12 QUERY PROCESSING ================= -->
+<section>
+<h2 class="sec"><span class="num">12</span><span class="mk">§S12</span> Query Processing &amp; Optimization <span class="sub">supplementary topic</span></h2>
+
+<div class="def">
+  <span class="lbl">Query processing — must learn</span>
+  <p><b>Query processing</b> is the set of steps a DBMS performs to turn a high-level query (SQL) into an <b>execution plan</b> and then into a result. <b>Query optimization</b> is the step that chooses the <b>cheapest of several equivalent plans</b> for the same query — equivalent because relational algebra expressions can be rewritten without changing the result.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Steps in query processing</h4>
+<ol class="tight">
+  <li><b>Parsing and validation</b> — the parser checks syntax; the catalog is checked for the existence of relations and attributes; the user's authorisation is verified.</li>
+  <li><b>Translation</b> — the validated query is converted into a <b>relational algebra expression</b> (a tree of σ, π, ⋈, ×, ∪ …).</li>
+  <li><b>Optimization</b> — equivalent plans are generated and their costs estimated; the cheapest plan is kept.</li>
+  <li><b>Evaluation</b> — the execution engine runs the plan with physical operators (table scan, index scan, sort, hash join …) and returns the result.</li>
+</ol>
+<p class="small">A <b>query evaluation plan</b> is the annotated tree: each algebra operation is mapped to a concrete algorithm plus an access path.</p>
+</div>
+<div>
+<figure style="margin-top:0">
+<svg viewBox="0 0 180 139" width="250" font-family="DejaVu Sans">
+  <defs><marker id="arq" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 z" fill="#123a63"/></marker></defs>
+  <rect x="14" y="1" width="152" height="22" rx="2.5" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/>
+  <text x="90" y="11" text-anchor="middle" fill="#123a63" font-weight="bold" font-size="9">SQL query</text>
+  <text x="90" y="19" text-anchor="middle" fill="#5b6b7b" font-size="6.6">SELECT … FROM … WHERE …</text>
+  <line x1="90" y1="23" x2="90" y2="30" stroke="#123a63" stroke-width="0.9" marker-end="url(#arq)"/>
+  <rect x="14" y="30" width="152" height="22" rx="2.5" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/>
+  <text x="90" y="40" text-anchor="middle" fill="#123a63" font-weight="bold" font-size="9">1 Parsing &amp; validation</text>
+  <text x="90" y="48" text-anchor="middle" fill="#5b6b7b" font-size="6.6">syntax · catalog · authorisation</text>
+  <line x1="90" y1="52" x2="90" y2="59" stroke="#123a63" stroke-width="0.9" marker-end="url(#arq)"/>
+  <rect x="14" y="59" width="152" height="22" rx="2.5" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/>
+  <text x="90" y="69" text-anchor="middle" fill="#123a63" font-weight="bold" font-size="9">2 Translation</text>
+  <text x="90" y="77" text-anchor="middle" fill="#5b6b7b" font-size="6.6">relational algebra tree</text>
+  <line x1="90" y1="81" x2="90" y2="88" stroke="#123a63" stroke-width="0.9" marker-end="url(#arq)"/>
+  <rect x="14" y="88" width="152" height="24" rx="2.5" fill="#e8f4f2" stroke="#0e6f66" stroke-width="1"/>
+  <text x="90" y="98" text-anchor="middle" fill="#0e6f66" font-weight="bold" font-size="9">3 Optimization</text>
+  <text x="90" y="106" text-anchor="middle" fill="#5b6b7b" font-size="6.6">estimate cost → cheapest plan</text>
+  <line x1="90" y1="112" x2="90" y2="119" stroke="#123a63" stroke-width="0.9" marker-end="url(#arq)"/>
+  <rect x="14" y="119" width="152" height="18" rx="2.5" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/>
+  <text x="90" y="131" text-anchor="middle" fill="#123a63" font-weight="bold" font-size="9">4 Evaluation → result</text>
+</svg>
+<figcaption>Optimization is one step of four; it never changes the answer, only the cost.</figcaption>
+</figure>
+</div>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Cost model and catalog statistics</h4>
+<ul class="tight">
+  <li>Cost is measured mainly in <b>block (page) transfers</b> from disk; CPU time and, in distributed systems, communication cost are added.</li>
+  <li>The <b>catalog</b> stores statistics: <b>n<sub>r</sub></b> tuples, <b>b<sub>r</sub></b> blocks, <b>s<sub>r</sub></b> tuple size, <b>f<sub>r</sub></b> tuples per block, <b>V(A, r)</b> distinct values of A.</li>
+  <li><b>Selectivity</b> = fraction of tuples that satisfy a condition. For an equality on a non-key attribute: n<sub>r</sub> / V(A, r).</li>
+  <li>Statistics are approximate and refreshed periodically, so the optimizer's choice can be wrong for skewed data.</li>
+</ul>
+</div>
+<div>
+<h4>Heuristic (rule-based) optimization</h4>
+<ol class="tight">
+  <li><b>Push selections down</b> — apply σ as early as possible, before joins, so fewer tuples flow upward.</li>
+  <li><b>Push projections down</b> — drop unused attributes early, reducing tuple width.</li>
+  <li><b>Turn σ over × into a join</b> — never compute a Cartesian product when a join condition exists.</li>
+  <li><b>Join the most restrictive pair first</b> — smallest intermediate results.</li>
+  <li><b>Use an index</b> for a selection or join predicate when one exists.</li>
+  <li><b>Reuse common sub-expressions</b>; avoid computing the same result twice.</li>
+</ol>
+</div>
+</div>
+
+<h3>Algorithms for selection <span class="tag under">Understand</span></h3>
+<table style="font-size:7.6pt">
+  <thead><tr><th style="width:20%">Method</th><th style="width:38%">How it works</th><th style="width:19%">Cost (block transfers)</th><th style="width:23%">Use when</th></tr></thead>
+  <tbody>
+    <tr><td class="k">A1 linear search</td><td>Read every block and test every tuple.</td><td>b<sub>r</sub></td><td>Any condition; always possible.</td></tr>
+    <tr><td class="k">A2 binary search</td><td>File ordered on the attribute; binary search for the first match, then read the matching blocks.</td><td>log<sub>2</sub>(b<sub>r</sub>) + matching blocks</td><td>Equality on the ordering attribute, no index.</td></tr>
+    <tr><td class="k">A3 index scan</td><td>Use a B<sup>+</sup>-tree index to find the first matching entry, then follow the pointers.</td><td>h<sub>i</sub> + matching blocks</td><td>Clustering index on the attribute.</td></tr>
+    <tr><td class="k">A4 key equality</td><td>Primary index on a key: one index lookup, one tuple.</td><td>h<sub>i</sub> + 1</td><td>Equality on a key.</td></tr>
+  </tbody>
+</table>
+<p class="small">h<sub>i</sub> = height of the index. A1 is the fallback: it always works but never wins when an index exists.</p>
+
+<h3>Algorithms for join <span class="tag under">Understand</span></h3>
+<table style="font-size:7.6pt">
+  <thead><tr><th style="width:19%">Method</th><th style="width:39%">Idea</th><th style="width:19%">Cost</th><th style="width:23%">Chosen when</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Nested loop</td><td>For every tuple of r, scan all of s.</td><td>b<sub>r</sub> + n<sub>r</sub> · b<sub>s</sub></td><td>Small relations; any join condition.</td></tr>
+    <tr><td class="k">Block nested loop</td><td>For every <b>block</b> of r, scan all of s — keeps one block of r in memory.</td><td>b<sub>r</sub> · b<sub>s</sub> + b<sub>r</sub></td><td>No index, no extra memory; the usual baseline.</td></tr>
+    <tr><td class="k">Index nested loop</td><td>For every tuple of r, probe an index on the join attribute of s.</td><td>b<sub>r</sub> + n<sub>r</sub> · c</td><td>Index exists on the inner relation; r is small.</td></tr>
+    <tr><td class="k">Sort–merge join</td><td>Sort both inputs on the join attribute, then merge in one pass.</td><td>sort cost + b<sub>r</sub> + b<sub>s</sub></td><td>Inputs already sorted, or output must be sorted.</td></tr>
+    <tr><td class="k">Hash join</td><td>Hash both inputs into buckets on the join attribute, then join bucket by bucket.</td><td>3 · (b<sub>r</sub> + b<sub>s</sub>)</td><td>Equi-join and enough memory for the hash table.</td></tr>
+  </tbody>
+</table>
+<p class="small">c = cost of one index probe; state your assumptions (memory, buffering) when you quote these costs.</p>
+
+<div class="grid2">
+<div>
+<h4>Cost-based optimization</h4>
+<ul class="tight">
+  <li>Enumerate the <b>search space</b>: join orders, join algorithms, access paths (index or scan), and pipelining choices.</li>
+  <li>Estimate the cost of each candidate with the catalog statistics and keep the cheapest.</li>
+  <li><b>Dynamic programming (System R)</b>: build left-deep join trees, and for every subset of relations keep only the cheapest plan — n relations give 2<sup>n</sup> subsets instead of n! orders.</li>
+  <li>Cost grows quickly, so real optimizers use heuristics to prune the space before costing.</li>
+</ul>
+<h4>Pipelining vs materialization</h4>
+<ul class="tight">
+  <li><b>Pipelining</b> — a parent operator consumes tuples as the child produces them; no temporary relation is written. Cheaper, but blocked by sort and hash operators.</li>
+  <li><b>Materialization</b> — the intermediate result is written to a temporary relation and read back; needed when the consumer needs the whole input first.</li>
+</ul>
+</div>
+<div>
+<h4>Worked example — same query, three plans</h4>
+<pre>student: b = 100 blocks, n = 1000 tuples
+marks:   b = 500 blocks, n = 10000 tuples
+
+SELECT * FROM student s, marks m
+WHERE s.id = m.sid AND s.dept = 'CSE';
+σ dept='CSE' keeps 20 blocks of student.
+
+Plan A  × then σ then ⋈
+        100 × 500 = 50,000
+
+Plan B  push σ, block nested loop
+        20 × 500 + 20 = 10,020
+
+Plan C  push σ, hash join
+        3 × (20 + 500) = 1,560
+
+Answer: Plan C — selection pushed down,
+equi-join by hashing.</pre>
+<p class="small">Write the plan, the arithmetic and the winner. The arithmetic is what earns the marks, not the final number.</p>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Query processing</span>
+  <ul>
+    <li><b>2 marks:</b> define query processing and query optimization; name the four steps.</li>
+    <li><b>5 marks:</b> the four steps with a diagram, or the six heuristic rules with one example each.</li>
+    <li><b>10 marks:</b> definition → four steps and diagram → cost model and statistics → selection and join tables → heuristic rules → cost-based optimization → one worked example comparing two plans.</li>
+    <li class="q">Likely questions: (i) Why is a Cartesian product avoided when a join condition exists? (ii) Compare nested-loop, sort–merge and hash join. (iii) Cost a block nested-loop join for given b<sub>r</sub> and b<sub>s</sub>. (iv) Pipelining vs materialization?</li>
+  </ul>
+</div>
+
+<div class="flag">
+  <span class="lbl">Scope note</span>
+  <p>This topic is <b>not in the Unit III source</b>; it is added because query processing is usually examined with transactions and recovery. Cost formulas follow the standard textbook model (block transfers, catalog statistics). If your syllabus places query processing in another unit, keep this section for the definition and the heuristic rules only.</p>
+</div>
+</section>
