@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DBMS One-Day Exam Notes</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<section class="cover">
+  <div class="kicker">Unit III &nbsp;·&nbsp; One-Day Revision Pack</div>
+  <h1>DBMS Exam Notes
+    <span>Transactions · Concurrency Control · Recovery · PL/SQL</span>
+  </h1>
+  <div class="rule"></div>
+  <p class="lede">The whole of Unit III — 136 pages of source material — condensed into one revision set.
+  Every distinct examinable topic is kept; repetition, reference lists and filler are removed.
+  Built for three passes in one day: concepts in the morning, comparisons at noon, exam focus at night.</p>
+
+  <div class="tocfull">
+    <div><span>1 · Transactions &amp; ACID</span><span data-ref="s1">p. 2</span></div>
+    <div><span>2 · Serializability</span><span data-ref="s2">p. 3</span></div>
+    <div><span>3 · Recoverability</span><span data-ref="s3">p. 4</span></div>
+    <div><span>4 · Concurrency problems</span><span data-ref="s4">p. 5</span></div>
+    <div><span>5 · Locking &amp; 2PL</span><span data-ref="s5">p. 6</span></div>
+    <div><span>6 · Timestamp ordering</span><span data-ref="s6">p. 8</span></div>
+    <div><span>7 · Optimistic &amp; granularity</span><span data-ref="s7">p. 9</span></div>
+    <div><span>8 · Recovery techniques</span><span data-ref="s8">p. 10</span></div>
+    <div><span>9 · Procedures &amp; functions</span><span data-ref="s9">p. 13</span></div>
+    <div><span>10 · Triggers</span><span data-ref="s10">p. 15</span></div>
+    <div><span>11 · Packages &amp; cursors</span><span data-ref="s11">p. 16</span></div>
+    <div><span>12 · Query processing &amp; optimization</span><span data-ref="s12">p. 17</span></div>
+    <div><span>13 · Final revision</span><span data-ref="s13">p. 19</span></div>
+  </div>
+
+  <div class="cover-grid">
+    <div class="cover-card">
+      <h3>How to use it in one day</h3>
+      <ol>
+        <li><b>Morning, 3 h — Sections 1–4.</b> Read each definition aloud once, then close the page and rewrite the ACID table and the four concurrency problems from memory.</li>
+        <li><b>Afternoon, 3 h — Sections 5–8.</b> Draw 2PL, the timestamp rules and the log-recovery flow on blank paper. These carry the high-weight diagram and numerical questions.</li>
+        <li><b>Evening, 2 h — Sections 9–11.</b> Learn the PL/SQL syntax blocks, then answer only the “Exam Focus” questions.</li>
+        <li><b>Last 30 min — Section 12.</b> Checklist and comparison table only. Do not open new topics.</li>
+      </ol>
+    </div>
+
+    <div class="cover-card">
+      <h3>Labels used on every page</h3>
+      <p class="legend">
+        <i><span class="tag must">Must learn</span> write it verbatim</i>
+        <i><span class="tag under">Understand</span> explain in your words</i>
+        <i><span class="tag quick">Quick recall</span> one-line fact</i>
+      </p>
+      <p style="margin-top:2.2mm">Blue boxes hold the definition to reproduce in the exam. Amber boxes close every topic with exam focus. Red boxes mark points where the source is unclear or wrong — they are the common traps.</p>
+      <h3 style="margin-top:3.4mm">Marking pattern used</h3>
+      <p>Every topic is written for 2-mark (definition), 5-mark (explanation with example) and 10-mark (full framework with diagram or table) answers.</p>
+    </div>
+  </div>
+
+  <div class="unitmap">
+    <div>
+      <h4>3.1 · PL/SQL programming</h4>
+      <p>Procedures and functions · parameter modes · triggers · packages · cursors in packages</p>
+    </div>
+    <div>
+      <h4>3.2 · Transactions &amp; concurrency</h4>
+      <p>ACID and states · serializability · recoverability · locking and 2PL · timestamps · optimistic and granularity control</p>
+    </div>
+    <div>
+      <h4>3.3 · Recovery</h4>
+      <p>Failure types · logs · deferred and immediate update · checkpoints · shadow paging · backup types</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:4.4mm; margin-bottom:0">Six rules for full marks</h3>
+  <div class="rules">
+    <div><span>1</span>Open with the definition — the first mark is always for it.</div>
+    <div><span>2</span>Draw the diagram even when it is not asked, and label every box.</div>
+    <div><span>3</span>Put numbers in examples: ₹ amounts, timestamps, log records.</div>
+    <div><span>4</span>Compare in a table, never in a paragraph.</div>
+    <div><span>5</span>Name the algorithm (2PL, TO, deferred update) before explaining it.</div>
+    <div><span>6</span>Close with its limitation — deadlock, cascading rollback, overhead.</div>
+  </div>
+
+  <div class="band">
+    <b>Source coverage.</b> Chapter 3.1.1–3.1.5 (PL/SQL subprograms, stored procedures, triggers, packages, cursors in packages) ·
+    3.2.1–3.2.8 (transaction processing, ACID, serializability, recoverability, need for concurrency control, locking, timestamps, optimistic and multiple-granularity control) ·
+    3.3.1–3.3.3 (recovery management, error types, recovery techniques). The three recovery chapters repeat each other, so they are merged into Section 8. Section 12 (query processing and optimization) is supplementary: it is not in the Unit III source and is marked as such.
+  </div>
+</section>

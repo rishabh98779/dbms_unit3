@@ -1,0 +1,194 @@
+<!-- ================= 6 TIMESTAMP ================= -->
+<section>
+<h2 class="sec"><span class="num">6</span><span class="mk">§S06</span> Timestamp Ordering <span class="sub">source 3.2.7</span></h2>
+
+<div class="def">
+  <span class="lbl">Timestamp — must learn</span>
+  <p>A <b>timestamp</b> TS(T) is a unique identifier created by the DBMS for each transaction, usually assigned in the order in which transactions are submitted (system time or a logical counter). The protocol orders transactions by timestamp, so the only permitted equivalent serial schedule is the timestamp order. The <b>older transaction always gets priority</b>.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Two timestamps per data item X</h4>
+<table style="font-size:7.7pt">
+  <tbody>
+    <tr><td class="k">W_TS(X)</td><td>Largest timestamp of any transaction that <b>successfully wrote</b> X.</td></tr>
+    <tr><td class="k">R_TS(X)</td><td>Largest timestamp of any transaction that <b>successfully read</b> X.</td></tr>
+  </tbody>
+</table>
+<h4>Basic TO — write rule</h4>
+<p>When T issues <span class="mono">write(X)</span>:</p>
+<ul class="tight">
+  <li>If <b>R_TS(X) &gt; TS(T)</b> or <b>W_TS(X) &gt; TS(T)</b> → a younger transaction has already read/written X, so <b>abort and roll back T</b>, reject the operation.</li>
+  <li>Otherwise execute the write and set <b>W_TS(X) = TS(T)</b>.</li>
+</ul>
+<h4>Basic TO — read rule</h4>
+<p>When T issues <span class="mono">read(X)</span>:</p>
+<ul class="tight">
+  <li>If <b>W_TS(X) &gt; TS(T)</b> → a younger transaction has already written X → <b>abort and reject T</b>.</li>
+  <li>Otherwise execute the read and set <b>R_TS(X) = max(TS(T), R_TS(X))</b>.</li>
+</ul>
+</div>
+<div>
+<h4>How to answer a numerical question</h4>
+<pre>T1: TS = 0010   T2: TS = 0020   T3: TS = 0030
+Priority: T1, then T2, then T3.
+
+Case: R_TS(X) = 30, W_TS(X) = 10
+  T2 writes X → R_TS(X)=30 &gt; TS(T2)=20
+  ⇒ abort T2 (a younger T3 already read X).
+
+Case: W_TS(X) = 10
+  T2 reads X → 10 ≤ 20 ⇒ read allowed,
+  R_TS(X) = max(20, 30) = 30.</pre>
+<p class="small">The algorithm compares TS(T) with R_TS(X) and W_TS(X) on <b>every</b> read and write, and rejects the operation of the transaction that would violate the order.</p>
+</div>
+</div>
+
+<div class="grid2">
+<div>
+<h3>Strict TO</h3>
+<p>A transaction T that issues <span class="mono">read(X)</span> or <span class="mono">write(X)</span> with <b>TS(T) &gt; W_TS(X)</b> has its operation <b>delayed until the transaction that wrote X has committed or aborted</b>. This makes schedules both <b>strict</b> and conflict serializable, and removes cascading rollback.</p>
+</div>
+<div>
+<h3>Advantages / disadvantages <span class="tag must">Must learn</span></h3>
+<table style="font-size:7.7pt">
+  <thead><tr><th style="width:50%">Advantages</th><th style="width:50%">Disadvantages</th></tr></thead>
+  <tbody>
+    <tr><td>Schedules are conflict serializable (precedence graph is acyclic).</td><td>Basic TO can still cause <b>cascading rollback</b>, so schedules may not be recoverable.</td></tr>
+    <tr><td><b>Deadlock-free</b>: no transaction ever waits.</td><td><b>Starvation</b> possible if the same transaction is restarted and continually aborted.</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Timestamp ordering</span>
+  <ul>
+    <li><b>2 marks:</b> define timestamp, R_TS(X), W_TS(X); why is basic TO deadlock-free?</li>
+    <li><b>5 marks:</b> write the read and write rules and apply them to one conflicting pair.</li>
+    <li><b>10 marks:</b> “Explain timestamp ordering with an example. Compare it with 2PL.” → TS idea, two timestamps, rules, worked example, strict TO, advantages/disadvantages, one line comparing with 2PL (waits vs aborts).</li>
+    <li class="q">Likely questions: (i) Apply basic TO to a given schedule and show aborts. (ii) Why can TO still suffer cascading rollback? (iii) What does strict TO add?</li>
+  </ul>
+</div>
+</section>
+
+<!-- ================= 7 OPTIMISTIC + GRANULARITY ================= -->
+<section>
+<h2 class="sec"><span class="num">7</span><span class="mk">§S07</span> Optimistic Control, Granularity &amp; Distributed CC <span class="sub">source 3.2.8</span></h2>
+
+<h3>Granularity of data items</h3>
+<div class="grid2">
+<div>
+<p>The <b>granularity</b> is the size of the data item chosen as the unit of protection by the concurrency-control protocol. Possible levels, coarse → fine: <b>whole database → file → page (area) → record → field</b>.</p>
+<table style="font-size:7.6pt">
+  <thead><tr><th style="width:50%">Coarser granularity</th><th style="width:50%">Finer granularity</th></tr></thead>
+  <tbody>
+    <tr><td>Lower degree of concurrency (a lock on a block blocks other records in it).</td><td>Higher concurrency (different records lock independently).</td></tr>
+    <tr><td>Less lock information to store, fewer lock operations.</td><td>More items, more locks, bigger lock table, more overhead.</td></tr>
+  </tbody>
+</table>
+<p class="small"><b>Best size depends on the transaction mix:</b> few records per transaction → record level; many records of one file → block or file level.</p>
+</div>
+<div>
+<figure style="margin-top:0">
+<svg viewBox="0 0 215 108" width="250" height="126" font-family="DejaVu Sans" font-size="6.6">
+  <rect x="80" y="2" width="56" height="15" rx="2" fill="#123a63"/><text x="108" y="12.5" text-anchor="middle" fill="#fff" font-size="6.6">Database</text>
+  <rect x="34" y="26" width="42" height="14" rx="2" fill="#dceaf8" stroke="#123a63" stroke-width="0.6"/><text x="55" y="36" text-anchor="middle" fill="#123a63">file f1</text>
+  <rect x="140" y="26" width="42" height="14" rx="2" fill="#dceaf8" stroke="#123a63" stroke-width="0.6"/><text x="161" y="36" text-anchor="middle" fill="#123a63">file f2</text>
+  <rect x="14" y="52" width="30" height="13" rx="2" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.6"/><text x="29" y="61" text-anchor="middle" fill="#0e6f66">p11</text>
+  <rect x="50" y="52" width="30" height="13" rx="2" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.6"/><text x="65" y="61" text-anchor="middle" fill="#0e6f66">p12</text>
+  <rect x="128" y="52" width="30" height="13" rx="2" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.6"/><text x="143" y="61" text-anchor="middle" fill="#0e6f66">p21</text>
+  <rect x="164" y="52" width="30" height="13" rx="2" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.6"/><text x="179" y="61" text-anchor="middle" fill="#0e6f66">p22</text>
+  <rect x="46" y="78" width="38" height="13" rx="2" fill="#fdf6e6" stroke="#c98f2b" stroke-width="0.6"/><text x="65" y="87" text-anchor="middle" fill="#8a5a12">records</text>
+  <rect x="160" y="78" width="38" height="13" rx="2" fill="#fdf6e6" stroke="#c98f2b" stroke-width="0.6"/><text x="179" y="87" text-anchor="middle" fill="#8a5a12">records</text>
+  <g stroke="#5b6b7b" stroke-width="0.5">
+    <line x1="100" y1="17" x2="60" y2="26"/><line x1="116" y1="17" x2="156" y2="26"/>
+    <line x1="50" y1="40" x2="33" y2="52"/><line x1="60" y1="40" x2="63" y2="52"/>
+    <line x1="156" y1="40" x2="147" y2="52"/><line x1="166" y1="40" x2="176" y2="52"/>
+    <line x1="62" y1="65" x2="64" y2="78"/><line x1="176" y1="65" x2="178" y2="78"/>
+  </g>
+</svg>
+<figcaption>Locking a node locks all its descendants.</figcaption>
+</figure>
+</div>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Intention locks</h4>
+<p>To make multi-level locking practical, a transaction announces on the path from root to node what it will do below:</p>
+<ul class="tight">
+  <li><b>IS</b> — intention shared: shared locks will be requested on descendants.</li>
+  <li><b>IX</b> — intention exclusive: exclusive locks will be requested on descendants.</li>
+  <li><b>SIX</b> — shared + intention exclusive: the node is locked in shared mode and exclusive locks will be requested below.</li>
+</ul>
+</div>
+<div>
+<table style="font-size:7.2pt; margin-top:1mm">
+  <caption>Compatibility (✓ compatible, ✗ conflict)</caption>
+  <thead><tr><th style="width:28%">Held ↓</th><th>IS</th><th>IX</th><th>S</th><th>SIX</th><th>X</th></tr></thead>
+  <tbody>
+    <tr><td class="k">IS</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+    <tr><td class="k">IX</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+    <tr><td class="k">S</td><td>✓</td><td>✗</td><td>✓</td><td>✗</td><td>✗</td></tr>
+    <tr><td class="k">SIX</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+    <tr><td class="k">X</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td><td>✗</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<h4>Multiple granularity locking (MGL) rules</h4>
+<ol class="steps" style="margin-bottom:1.2mm">
+  <li>Respect the lock compatibility table.</li>
+  <li>The <b>root must be locked first</b>, in any mode.</li>
+  <li>Lock a node in S or IS only if the parent is already locked in <b>IS or IX</b>.</li>
+  <li>Lock a node in X, IX or SIX only if the parent is already locked in <b>IX or SIX</b>.</li>
+  <li>A transaction may lock a node only if it has not yet unlocked any node (2PL).</li>
+  <li>Unlock a node only when none of its children are still locked by that transaction.</li>
+</ol>
+<p class="small">Benefit: a mix of short record-level transactions and long file-level transactions runs with less blocking and less locking overhead than single-level locking.</p>
+
+<h3>Optimistic (validation-based) concurrency control <span class="tag must">Must learn</span></h3>
+<div class="grid2">
+<div>
+<p>Also called <b>validation</b> or <b>certification</b>. No checking is done during execution; updates are applied to <b>local copies</b> and the serializability test is postponed to just before commit. It is called “optimistic” because it assumes little interference.</p>
+<ol class="steps">
+  <li><b>Read phase</b> — read committed values from the database; all updates go to local copies (transaction workspace).</li>
+  <li><b>Validation phase</b> — check that applying the updates will not violate serializability.</li>
+  <li><b>Write phase</b> — if validation succeeds, apply the updates to the database; otherwise discard them and restart the transaction.</li>
+</ol>
+</div>
+<div>
+<h4>Three validation rules</h4>
+<ul class="tight">
+  <li><b>Rule 1</b> — if T<sub>i</sub> reads what T<sub>j</sub> writes, T<sub>i</sub>'s execution must not overlap T<sub>j</sub>'s commit; T<sub>j</sub> commits only after T<sub>i</sub> finishes execution.</li>
+  <li><b>Rule 2</b> — if T<sub>i</sub> writes what T<sub>j</sub> reads, T<sub>i</sub>'s commit must not overlap T<sub>j</sub>'s execution; T<sub>j</sub> starts only after T<sub>i</sub> has committed.</li>
+  <li><b>Rule 3</b> — if T<sub>i</sub> and T<sub>j</sub> both write the same item, their commit phases must not overlap; T<sub>j</sub> commits only after T<sub>i</sub> has committed.</li>
+</ul>
+<p class="small">Practical check for T<sub>i</sub>: validated if, for every committed/validating T<sub>j</sub>, (1) T<sub>j</sub> finished writing before T<sub>i</sub> started reading, or (2) T<sub>i</sub> starts writing after T<sub>j</sub> finished writing and read_set(T<sub>i</sub>) ∩ write_set(T<sub>j</sub>) = ∅, or (3) both sets of T<sub>i</sub> are disjoint from write_set(T<sub>j</sub>) and T<sub>j</sub> finished reading before T<sub>i</sub> did.</p>
+</div>
+</div>
+<p class="note">Works well at <b>low conflict rates</b> (few aborts, almost no overhead during execution). At high conflict rates many completed transactions are discarded and restarted, so it performs badly.</p>
+
+<h3>Concurrency control in distributed systems</h3>
+<table>
+  <thead><tr><th style="width:21%">Approach</th><th>Key points</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Distributed timestamp</td><td>A local clock is not globally unique, so a timestamp = <b>site ID + that site's clock reading</b>. Each site's scheduler keeps one queue per transaction manager; requests are queued in increasing timestamp order and processed oldest first.</td></tr>
+    <tr><td class="k">Conflict graphs</td><td>A transaction class is defined by a read set and a write set; a transaction belongs to the class if its sets are subsets of the class sets. <b>Vertical edge</b> = conflict within a class, <b>horizontal edge</b> = write–write conflict across classes, <b>diagonal edge</b> = read–write/write–read conflict across classes. The graph tells whether two transactions can run in parallel.</td></tr>
+    <tr><td class="k">Distributed optimistic</td><td>Rule 1: validate <b>locally at every site</b> where the transaction executed; invalid at any site ⇒ abort. Rule 2: after local validation, validate <b>globally</b> so that conflicting transactions commit in the same relative order at all sites — this may force a wait, making the algorithm less optimistic.</td></tr>
+  </tbody>
+</table>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Optimistic, granularity, distributed</span>
+  <ul>
+    <li><b>2 marks:</b> define granularity; name the three intention locks; name the three phases of optimistic CC.</li>
+    <li><b>5 marks:</b> explain the granularity trade-off; state the MGL rules; explain the validation phase.</li>
+    <li><b>10 marks:</b> “Explain optimistic concurrency control with its phases and validation rules. When does it perform poorly?” or “Explain multiple granularity locking with intention locks.”</li>
+    <li class="q">Likely questions: (i) Why are intention locks needed? (ii) Give the three validation rules. (iii) How is a timestamp built in a distributed system? (iv) What do vertical, horizontal and diagonal edges mean?</li>
+  </ul>
+</div>
+</section>

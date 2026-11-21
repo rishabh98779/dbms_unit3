@@ -1,0 +1,340 @@
+<!-- ================= 9 PROCEDURES & FUNCTIONS ================= -->
+<section>
+<h2 class="sec"><span class="num">9</span><span class="mk">§S09</span> Procedures &amp; Functions <span class="sub">source 3.1.1 – 3.1.2</span></h2>
+
+<div class="def">
+  <span class="lbl">Definition</span>
+  <p><b>Procedures and functions</b> are PL/SQL <b>subprograms</b>: named blocks that are created and saved in the database as database objects, and can be called or referred to inside other blocks. A subprogram must be created manually; once created it is stored as an object.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Terminology</h4>
+<ul class="tight">
+  <li><b>Parameter</b> — a variable/placeholder of a valid PL/SQL datatype through which the subprogram exchanges values with the main code. Defined at creation, included in the calling statement, datatype must match the caller, and <b>size is not specified</b> at declaration (it is dynamic).</li>
+  <li><b>RETURN</b> — transfers control from the subprogram back to the calling statement; code after RETURN is skipped. In a function it also returns a value whose datatype is declared at creation.</li>
+</ul>
+</div>
+<div>
+<h4>Procedure — characteristics</h4>
+<ul class="tight">
+  <li>Standalone block stored in the database, called by its unique name.</li>
+  <li>Used to <b>execute a process</b> (not mainly to compute a value).</li>
+  <li>May contain nested blocks, and may be nested inside other blocks or packages.</li>
+  <li>Has an optional declaration part, an execution part, and an optional exception part.</li>
+  <li>Values pass in/out through parameters listed in the calling statement.</li>
+  <li>May contain RETURN to exit early but <b>cannot return a value</b> through RETURN.</li>
+  <li><b>Cannot be called directly from a SELECT statement</b>; call from another block or with <span class="mono">EXEC</span>.</li>
+</ul>
+</div>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Function — characteristics</h4>
+<ul class="tight">
+  <li>Standalone subprogram with a unique name, stored as a database object.</li>
+  <li>Used mainly for <b>calculation</b>.</li>
+  <li>Must <b>return a value or raise an exception</b> — RETURN is mandatory.</li>
+  <li>A function with <b>no DML</b> can be called directly in a SELECT query; a function with DML can only be called from other PL/SQL blocks.</li>
+  <li>May return a value through OUT parameters as well as through RETURN.</li>
+  <li>In a calling statement it is used with an assignment operator to receive the value.</li>
+</ul>
+</div>
+<div>
+<h4>Similarities</h4>
+<ul class="tight">
+  <li>Both can be called from other PL/SQL blocks.</li>
+  <li>An unhandled exception propagates to the calling block.</li>
+  <li>Both can have any number of parameters and are database objects.</li>
+</ul>
+<p class="small" style="margin-bottom:0">A subprogram is simply a procedure or function created on demand; once created it is stored as a database object.</p>
+</div>
+</div>
+
+<h3>Syntax and examples <span class="tag must">Must learn</span></h3>
+<div class="grid2">
+<div>
+<pre><b>CREATE OR REPLACE PROCEDURE</b> name
+( p1 IN/OUT datatype, ... )
+{ IS | AS }
+  declaration_part
+BEGIN
+  execution_part
+EXCEPTION
+  exception_part
+END;</pre>
+<pre><b>CREATE OR REPLACE FUNCTION</b> name
+( p1 IN/OUT datatype )
+<b>RETURN</b> datatype
+{ IS | AS }
+  declaration_part
+BEGIN
+  execution_part
+RETURN value;
+END;</pre>
+<p class="small"><span class="mono">IS</span> is used for a nested subprogram, <span class="mono">AS</span> for a standalone one — otherwise identical. <span class="mono">OR REPLACE</span> overwrites an existing version; the name must be unique.</p>
+</div>
+<div>
+<pre>CREATE OR REPLACE PROCEDURE welcome_msg
+       (p_name IN VARCHAR2)
+IS
+BEGIN
+  dbms_output.put_line('Welcome '||p_name);
+END;
+/
+EXEC welcome_msg('Guru99');     -- Welcome Guru99
+
+CREATE OR REPLACE FUNCTION welcome_msg_func
+       (p_name IN VARCHAR2) RETURN VARCHAR2
+IS
+BEGIN
+  RETURN ('Welcome '||p_name);
+END;
+/
+-- call in a block, or directly in SQL:
+SELECT welcome_msg_func('Guru99') FROM DUAL;</pre>
+<p class="small">Execute a standalone procedure with <span class="mono">EXECUTE name;</span> or by naming it inside another PL/SQL block. Remove it with <span class="mono">DROP PROCEDURE name;</span></p>
+</div>
+</div>
+
+<h3>Procedure vs function — the comparison to memorise</h3>
+<table>
+  <thead><tr><th style="width:22%">Point</th><th style="width:39%">Procedure</th><th style="width:39%">Function</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Purpose</td><td>Performs a process / action.</td><td>Performs a calculation and returns a value.</td></tr>
+    <tr><td class="k">RETURN</td><td>Optional; returns control only, never a value.</td><td><b>Mandatory</b>; returns a value whose type is declared.</td></tr>
+    <tr><td class="k">Call in SELECT</td><td>Not allowed.</td><td>Allowed if the function contains no DML.</td></tr>
+    <tr><td class="k">Calling style</td><td><span class="mono">EXEC name(...)</span> or inside a block.</td><td>Inside an expression / assignment, or SELECT.</td></tr>
+    <tr><td class="k">Return through OUT</td><td>Yes — the usual way to return values.</td><td>Yes, in addition to RETURN.</td></tr>
+  </tbody>
+</table>
+
+<h3>Parameter modes <span class="tag must">Must learn</span></h3>
+<table>
+  <thead><tr><th style="width:13%">Mode</th><th style="width:35%">Use and behaviour inside the subprogram</th><th style="width:52%">What the caller may pass / how it is passed</th></tr></thead>
+  <tbody>
+    <tr><td class="k">IN<br><span class="small">default</span></td><td>Input only. Acts like a constant — <b>read-only</b>, cannot be assigned.</td><td>A constant, literal, initialized variable or expression (e.g. <span class="mono">5*8</span>). Can have a default value. <b>Passed by reference.</b></td></tr>
+    <tr><td class="k">OUT</td><td>Output only. Acts like a variable — can be assigned and then read.</td><td>Must be a <b>variable</b>. <b>Passed by value.</b></td></tr>
+    <tr><td class="k">IN OUT</td><td>Both input and output; can be read and assigned.</td><td>Must be a variable, not a constant or expression; formal parameter must be assigned. <b>Passed by value.</b></td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h4>Three ways to pass parameters</h4>
+<ul class="tight">
+  <li><b>Positional:</b> <span class="mono">findMin(a, b, c)</span> — first actual → first formal, and so on.</li>
+  <li><b>Named:</b> <span class="mono">findMin(x =&gt; a, y =&gt; b, z =&gt; c)</span> — each actual is tied to a formal with <span class="mono">=&gt;</span>.</li>
+  <li><b>Mixed:</b> <span class="mono">findMin(a, b, c, m =&gt; d)</span> — legal only if positional parameters come <b>first</b>.</li>
+</ul>
+</div>
+<div>
+<pre>-- IN and OUT together
+PROCEDURE findMin(x IN number, y IN number,
+                   z OUT number) IS
+BEGIN
+  IF x &lt; y THEN z := x; ELSE z := y; END IF;
+END;
+-- call: findMin(a, b, c);   → c = 23
+
+-- IN OUT: same parameter in and out
+PROCEDURE squareNum(x IN OUT number) IS
+BEGIN  x := x * x;  END;
+-- call: squareNum(a);       → a = 529</pre>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Procedures &amp; functions</span>
+  <ul>
+    <li><b>2 marks:</b> define procedure and function; which parameter mode is the default? what does RETURN do?</li>
+    <li><b>5 marks:</b> explain IN, OUT and IN OUT with one example each; write the syntax of a procedure.</li>
+    <li><b>10 marks:</b> “Differentiate procedures and functions with syntax and examples” or “Explain parameter modes and methods of passing parameters in PL/SQL”.</li>
+    <li class="q">Likely questions: (i) Can a procedure be called from a SELECT statement? Why not? (ii) Explain positional, named and mixed notation. (iii) List the advantages of stored procedures.</li>
+  </ul>
+</div>
+
+<div class="box">
+  <h4>Advantages and disadvantages of stored procedures <span class="tag quick">Quick recall</span></h4>
+  <div class="grid2">
+    <div>
+      <p><b>Advantages:</b> better performance (compiled once, cached executable); higher productivity (reuse); ease of use; scalability (processing isolated on the server); maintainability (one copy on the server); security (access only through procedures with definer's privileges).</p>
+    </div>
+    <div>
+      <p><b>Disadvantages:</b> testing is difficult (data errors appear only at runtime); debugging is difficult or impossible in some databases; no version control; extra cost (a DBA/developer is needed); poor portability (complex procedures may not move to another database or a newer version).</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ================= 10 TRIGGERS ================= -->
+<section>
+<h2 class="sec"><span class="num">10</span><span class="mk">§S10</span> Triggers <span class="sub">source 3.1.3</span></h2>
+
+<div class="def">
+  <span class="lbl">Definition — must learn</span>
+  <p>A <b>trigger</b> is a stored program that is <b>automatically executed (fired)</b> when a specified event occurs. Triggers can be defined on a <b>table, view, schema or database</b>.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h4>Events that fire a trigger</h4>
+<ul class="tight">
+  <li><b>DML:</b> INSERT, UPDATE, DELETE.</li>
+  <li><b>DDL:</b> CREATE, ALTER, DROP.</li>
+  <li><b>Database operations:</b> SERVERERROR, LOGON, LOGOFF, STARTUP, SHUTDOWN.</li>
+</ul>
+</div>
+<div>
+<h4>Benefits (purposes)</h4>
+<ul class="tight">
+  <li>Generate derived column values automatically.</li>
+  <li>Enforce referential integrity.</li>
+  <li>Event logging and storing information on table access.</li>
+  <li>Auditing; imposing security authorizations.</li>
+  <li>Synchronous replication of tables.</li>
+  <li>Preventing invalid transactions.</li>
+</ul>
+</div>
+</div>
+
+<h4>Anatomy of the CREATE TRIGGER statement</h4>
+<pre>CREATE [OR REPLACE] TRIGGER trigger_name
+{BEFORE | AFTER | INSTEAD OF}
+{INSERT [OR] | UPDATE [OR] | DELETE} [OF col_name]
+ON table_name
+[REFERENCING OLD AS o NEW AS n]
+[FOR EACH ROW]
+WHEN (condition)
+DECLARE ... BEGIN ... EXCEPTION ... END;</pre>
+<table style="font-size:7.45pt; margin-bottom:1.4mm">
+  <tbody>
+    <tr><td class="k" style="width:18%">BEFORE / AFTER</td><td>When the trigger body runs relative to the event.</td></tr>
+    <tr><td class="k">INSTEAD OF</td><td>Used to create a trigger on a <b>view</b>.</td></tr>
+    <tr><td class="k">FOR EACH ROW</td><td><b>Row-level</b>: fires once per affected row. Without it the trigger is <b>table-level</b> and fires once per statement.</td></tr>
+    <tr><td class="k">WHEN</td><td>Condition selecting rows; valid only for row-level triggers.</td></tr>
+    <tr><td class="k">:OLD / :NEW</td><td>Old and new values of the row for INSERT/UPDATE/DELETE; <b>not available in table-level triggers</b>.</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h4>Worked example</h4>
+<pre>CREATE OR REPLACE TRIGGER display_salary_changes
+BEFORE DELETE OR INSERT OR UPDATE ON customers
+FOR EACH ROW
+WHEN (NEW.ID &gt; 0)
+DECLARE
+  sal_diff number;
+BEGIN
+  sal_diff := :NEW.salary - :OLD.salary;
+  dbms_output.put_line('Old salary: ' || :OLD.salary);
+  dbms_output.put_line('New salary: ' || :NEW.salary);
+  dbms_output.put_line('Difference: ' || sal_diff);
+END;
+/</pre>
+</div>
+<div>
+<h4>Output and rules</h4>
+<table style="font-size:7.5pt">
+  <thead><tr><th style="width:34%">Action</th><th>Trigger output</th></tr></thead>
+  <tbody>
+    <tr><td>INSERT (new row, salary 7500)</td><td>Old salary: <i>null</i>; New salary: 7500; difference <i>null</i></td></tr>
+    <tr><td>UPDATE id=2, salary 1500→2000</td><td>Old salary: 1500; New salary: 2000; difference: 500</td></tr>
+  </tbody>
+</table>
+<ul class="tight">
+  <li>OLD/NEW references work for <b>row-level</b> triggers only.</li>
+  <li>To query or modify the same table inside the trigger, use <b>AFTER</b> — only then is the table back in a consistent state.</li>
+  <li>A trigger may be written for one operation (<span class="mono">BEFORE DELETE</span>) or several.</li>
+</ul>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Triggers</span>
+  <ul>
+    <li><b>2 marks:</b> define trigger; list the three event categories; difference between row-level and table-level trigger.</li>
+    <li><b>5 marks:</b> write the syntax of a trigger and explain each clause; list any five benefits.</li>
+    <li><b>10 marks:</b> “What is a trigger? Explain its types, syntax and benefits with an example.” → definition, events, BEFORE/AFTER/INSTEAD OF, row vs statement, OLD/NEW rules, salary example with output.</li>
+    <li class="q">Likely questions: (i) When would you use an INSTEAD OF trigger? (ii) Why are OLD and NEW unavailable in table-level triggers? (iii) Write a trigger to log salary changes.</li>
+  </ul>
+</div>
+</section>
+
+<!-- ================= 11 PACKAGES ================= -->
+<section>
+<h2 class="sec"><span class="num">11</span><span class="mk">§S11</span> Packages &amp; Cursors in Packages <span class="sub">source 3.1.4 – 3.1.5</span></h2>
+
+<div class="def">
+  <span class="lbl">Definition — must learn</span>
+  <p>A <b>package</b> is a schema object that groups logically related PL/SQL types, items (variables, constants, exceptions, cursors) and subprograms. It has two parts: a <b>specification</b> (the interface) and a <b>body</b> (the implementation); the body is sometimes unnecessary.</p>
+</div>
+
+<div class="grid2">
+<div>
+<table>
+  <thead><tr><th style="width:50%">Specification</th><th style="width:50%">Body</th></tr></thead>
+  <tbody>
+    <tr><td><b>Declares</b> types, variables, constants, exceptions, cursors and subprograms visible outside.</td><td>Contains the <b>code</b> of the declared subprograms plus private declarations hidden from outside.</td></tr>
+    <tr><td>Created with <span class="mono">CREATE PACKAGE</span>.</td><td>Created with <span class="mono">CREATE PACKAGE BODY</span>.</td></tr>
+    <tr><td>Objects here are <b>public</b>.</td><td>Subprograms coded here but not declared in the spec are <b>private</b>.</td></tr>
+  </tbody>
+</table>
+<p class="small">Access an element with <span class="mono">package_name.element_name</span>, e.g. <span class="mono">cust_sal.find_sal(code)</span>.</p>
+<pre>CREATE OR REPLACE PACKAGE cust_sal AS
+  PROCEDURE find_sal(c_id customers.id%TYPE);
+END cust_sal;
+/
+CREATE OR REPLACE PACKAGE BODY cust_sal AS
+  PROCEDURE find_sal(c_id customers.id%TYPE) IS
+    c_sal customers.salary%TYPE;
+  BEGIN
+    SELECT salary INTO c_sal FROM customers
+     WHERE id = c_id;
+    dbms_output.put_line('Salary: '||c_sal);
+  END find_sal;
+END cust_sal;
+/</pre>
+</div>
+<div>
+<h4>Cursors inside a package</h4>
+<ul class="tight">
+  <li>A cursor declared in the <b>package specification</b> or the <b>global part of the body</b> stays open until the <b>end of the session</b> once opened.</li>
+  <li>Therefore always test the cursor attribute <b>%ISOPEN</b> before referring to it.</li>
+</ul>
+<h4>Overloading</h4>
+<p>Having several subprograms with the <b>same name</b> that differ in the <b>number of parameters, their types, or the return type</b>. Used when many subprograms do the same task but must be called differently.</p>
+<h4>Dependencies to remember</h4>
+<ul class="tight">
+  <li>The specification is a standalone object; the <b>body depends on the specification</b>.</li>
+  <li>Compiling the specification <b>invalidates the body</b>, which must be recompiled.</li>
+  <li>A subprogram that depends on a private element must be defined <b>after</b> that declaration.</li>
+  <li>Database objects referenced by the spec/body must be valid at compile time.</li>
+</ul>
+</div>
+</div>
+
+<h3>Advantages of packages <span class="tag must">Must learn</span></h3>
+<table>
+  <thead><tr><th style="width:21%">Advantage</th><th>Explanation</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Modularity</td><td>Encapsulates related types, items and subprograms in one named module; interfaces between packages are simple and clear.</td></tr>
+    <tr><td class="k">Easier application design</td><td>You can code and compile the specification without the body; subprograms that reference the package can then be compiled. Bodies are written later.</td></tr>
+    <tr><td class="k">Information hiding</td><td>You choose which items are public or private; changing a private implementation affects only the package, protecting integrity and simplifying maintenance.</td></tr>
+    <tr><td class="k">Added functionality</td><td>Public variables and cursors <b>persist for the whole session</b> and are shared by all subprograms; data can be kept across transactions without storing it in the database.</td></tr>
+    <tr><td class="k">Better performance</td><td>The whole package is loaded into memory on first call, so later calls need no disk I/O; packages stop cascading dependencies, so changing a body does not force recompilation of callers.</td></tr>
+  </tbody>
+</table>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Packages</span>
+  <ul>
+    <li><b>2 marks:</b> define package; name its two parts; what is a public vs private object?</li>
+    <li><b>5 marks:</b> write a package specification and body for a simple example and call one element.</li>
+    <li><b>10 marks:</b> “Explain PL/SQL packages with specification, body and advantages” or “What is overloading? Explain cursors in packages.”</li>
+    <li class="q">Likely questions: (i) Why must %ISOPEN be checked for a packaged cursor? (ii) What happens to a package body when the specification is recompiled? (iii) List five advantages of packages.</li>
+  </ul>
+</div>
+</section>

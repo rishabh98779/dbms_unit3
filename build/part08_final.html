@@ -1,0 +1,158 @@
+<!-- ================= 13 FINAL REVISION ================= -->
+<section>
+<h2 class="sec"><span class="num">13</span><span class="mk">§S13</span> Final Revision <span class="sub">read this last</span></h2>
+
+<h3>Topic checklist — one line each</h3>
+<table class="split">
+  <thead><tr><th style="width:4%">✓</th><th style="width:25%">Topic</th><th>If you remember only one thing</th></tr></thead>
+  <tbody>
+    <tr><td>☐</td><td class="k">Transaction &amp; ACID</td><td>Group of tasks executed as one unit; Atomicity, Consistency, Isolation, Durability.</td></tr>
+    <tr><td>☐</td><td class="k">States</td><td>Active → Partially committed → Committed; Active/Partially committed → Failed → Aborted.</td></tr>
+    <tr><td>☐</td><td class="k">Schedules &amp; conflicts</td><td>Conflict = different transactions + same item + at least one write.</td></tr>
+    <tr><td>☐</td><td class="k">Serializability</td><td>Precedence graph: cycle ⇒ not conflict serializable; DAG ⇒ serializable.</td></tr>
+    <tr><td>☐</td><td class="k">Recoverability</td><td>Reader commits after writer commits; otherwise irrecoverable.</td></tr>
+    <tr><td>☐</td><td class="k">Concurrency problems</td><td>Lost update, dirty read, unrepeatable read, incorrect summary.</td></tr>
+    <tr><td>☐</td><td class="k">Locking &amp; 2PL</td><td>Growing = only locks; shrinking = only unlocks; strict 2PL holds all locks until commit.</td></tr>
+    <tr><td>☐</td><td class="k">Timestamp</td><td>Older timestamp wins; violation ⇒ abort; deadlock-free but cascading rollback possible.</td></tr>
+    <tr><td>☐</td><td class="k">Optimistic CC</td><td>Read → Validate → Write; no checks during execution; best at low conflict rates.</td></tr>
+    <tr><td>☐</td><td class="k">Granularity</td><td>Coarser = less concurrency, less overhead; IS/IX/SIX announce locks below.</td></tr>
+    <tr><td>☐</td><td class="k">Recovery</td><td>Log on stable storage; commit in log ⇒ REDO; start without commit ⇒ UNDO.</td></tr>
+    <tr><td>☐</td><td class="k">Checkpoint &amp; shadow paging</td><td>Checkpoint shortens recovery; shadow paging keeps two page tables.</td></tr>
+    <tr><td>☐</td><td class="k">Procedures vs functions</td><td>Procedure = action, no RETURN value; function = must RETURN a value.</td></tr>
+    <tr><td>☐</td><td class="k">Triggers</td><td>Fires automatically on DML/DDL/database events; row-level has :OLD and :NEW.</td></tr>
+    <tr><td>☐</td><td class="k">Query processing</td><td>Parse → translate → optimize → evaluate; push selections down, avoid Cartesian products, join the smallest pair first.</td></tr>
+    <tr><td>☐</td><td class="k">Packages</td><td>Spec (public interface) + body (code, private items); session-long variables.</td></tr>
+  </tbody>
+</table>
+
+<h3>Comparisons most likely to be asked</h3>
+<table class="split">
+  <thead><tr><th style="width:27%">Comparison</th><th>The one discriminator to write first</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Serial vs serializable</td><td>Serial = no concurrency; serializable = concurrent but equivalent to some serial order.</td></tr>
+    <tr><td class="k">Conflict vs view serializability</td><td>Conflict = swap non-conflicting operations / precedence graph; view = second type, not detailed in the source.</td></tr>
+    <tr><td class="k">Recoverable vs cascadeless</td><td>Recoverable allows dirty reads with delayed commit; cascadeless forbids reading uncommitted data at all.</td></tr>
+    <tr><td class="k">Shared vs exclusive lock</td><td>S = many readers, no writer; X = one transaction, read and write.</td></tr>
+    <tr><td class="k">2PL vs strict 2PL</td><td>2PL releases locks in a shrinking phase; strict 2PL releases everything only at commit (no cascading abort).</td></tr>
+    <tr><td class="k">2PL vs timestamp</td><td>2PL makes conflicting transactions <b>wait</b> (deadlock possible); TO <b>aborts</b> the younger one (no deadlock, but restarts).</td></tr>
+    <tr><td class="k">Pessimistic vs optimistic</td><td>Check before each operation vs check once at validation.</td></tr>
+    <tr><td class="k">Deferred vs immediate update</td><td>Write at commit, no undo vs write at once, undo and redo both needed.</td></tr>
+    <tr><td class="k">Procedure vs function</td><td>Action with no returned value vs calculation with mandatory RETURN.</td></tr>
+    <tr><td class="k">Package spec vs body</td><td>Declares public interface vs implements it plus private items.</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h3>Notation and syntax sheet</h3>
+<table style="font-size:7.5pt">
+  <tbody>
+    <tr><td class="k">Log write</td><td><span class="mono">&lt;T<sub>i</sub>, X, V<sub>old</sub>, V<sub>new</sub>&gt;</span></td></tr>
+    <tr><td class="k">TO write</td><td>abort if R_TS(X)&gt;TS(T) or W_TS(X)&gt;TS(T); else W_TS(X)=TS(T)</td></tr>
+    <tr><td class="k">TO read</td><td>abort if W_TS(X)&gt;TS(T); else R_TS(X)=max(TS(T),R_TS(X))</td></tr>
+    <tr><td class="k">Conflict edge</td><td>W→R, R→W, W→W on the same item</td></tr>
+    <tr><td class="k">2PL</td><td>grow (lock only) → lock point → shrink (unlock only)</td></tr>
+    <tr><td class="k">MGL parent rule</td><td>S/IS need parent IS or IX; X/IX/SIX need parent IX or SIX</td></tr>
+    <tr><td class="k">Optimistic</td><td>read_set, write_set, 3 phases, 3 validation conditions</td></tr>
+    <tr><td class="k">Trigger</td><td>BEFORE|AFTER|INSTEAD OF + event + ON table + FOR EACH ROW + WHEN</td></tr>
+    <tr><td class="k">Package call</td><td><span class="mono">package_name.element_name</span></td></tr>
+    <tr><td class="k">Selectivity</td><td>σ<sub>A=v</sub>(r) ≈ n<sub>r</sub> / V(A, r)</td></tr>
+    <tr><td class="k">Join cost</td><td>block nested loop b<sub>r</sub>·b<sub>s</sub> + b<sub>r</sub>; hash join 3(b<sub>r</sub> + b<sub>s</sub>)</td></tr>
+    <tr><td class="k">Parameter modes</td><td>IN (read-only, by reference), OUT, IN OUT (by value)</td></tr>
+  </tbody>
+</table>
+</div>
+<div>
+<h3>Ten-minute recall list</h3>
+<ol class="tight">
+  <li>ACID one word each: all-or-nothing, integrity, invisibility, permanence.</li>
+  <li>Five states in order, and where rollback can start.</li>
+  <li>Three conflict conditions; cycle test.</li>
+  <li>Recoverable = reader commits after writer.</li>
+  <li>Four concurrency problems in order with one number each.</li>
+  <li>2PL phases and lock point; strict 2PL = no shrinking.</li>
+  <li>TO rules and why TO has no deadlock.</li>
+  <li>Log rule: commit ⇒ redo, no commit ⇒ undo; undo first.</li>
+  <li>Checkpoint writes log + buffers and records the address.</li>
+  <li>Procedure vs function, row vs table trigger, spec vs body.</li>
+  <li>Query processing: parse → translate → optimize → evaluate; push selections down, avoid ×.</li>
+</ol>
+</div>
+</div>
+
+<h3>Source coverage map</h3>
+<table class="split" style="font-size:7.4pt">
+  <thead><tr><th style="width:9%">Source</th><th style="width:55%">Topic covered in these notes</th><th style="width:10%">Section</th><th style="width:26%">How it was handled</th></tr></thead>
+  <tbody>
+    <tr><td class="k">3.1.1</td><td>Procedures and functions, parameters, parameter modes</td><td>9</td><td>Syntax, characteristics, comparison table</td></tr>
+    <tr><td class="k">3.1.2</td><td>Advantages and disadvantages of stored procedures</td><td>9</td><td>Condensed into one box</td></tr>
+    <tr><td class="k">3.1.3</td><td>Triggers: events, types, syntax, OLD/NEW, example</td><td>10</td><td>Syntax, rules table, worked example</td></tr>
+    <tr><td class="k">3.1.4</td><td>Packages: specification and body</td><td>11</td><td>Comparison table and code example</td></tr>
+    <tr><td class="k">3.1.5</td><td>Cursors in packages, overloading, dependencies, advantages</td><td>11</td><td>Condensed into four lists and a table</td></tr>
+    <tr><td class="k">3.2.1</td><td>Transaction processing, ACID, states, schedules</td><td>1</td><td>Merged with 3.2.2</td></tr>
+    <tr><td class="k">3.2.2</td><td>Properties of transactions, read/write operations, concurrency benefits</td><td>1, 4</td><td>Merged; comparison tables</td></tr>
+    <tr><td class="k">3.2.3</td><td>Serializability, conflicts, precedence graph</td><td>2</td><td>Method + two graphs</td></tr>
+    <tr><td class="k">3.2.4</td><td>Recoverability, cascading rollback, cascadeless, strict</td><td>3</td><td>Comparison table + decision method</td></tr>
+    <tr><td class="k">3.2.5</td><td>Need for concurrency control, four classic problems</td><td>4</td><td>Table with numeric examples</td></tr>
+    <tr><td class="k">3.2.6</td><td>Locking, binary locks, S/X locks, lock manager, 2PL, strict 2PL, distributed 2PL</td><td>5</td><td>Tables + growing/shrinking diagram</td></tr>
+    <tr><td class="k">3.2.7</td><td>Timestamp ordering, read/write rules, strict TO</td><td>6</td><td>Rules as pseudocode + worked trace</td></tr>
+    <tr><td class="k">3.2.8</td><td>Optimistic CC, granularity, MGL, distributed CC</td><td>7</td><td>Phases, validation rules, lock tree</td></tr>
+    <tr><td class="k">3.3.1</td><td>Introduction to recovery, failure types, log, deferred/immediate, backups</td><td>8</td><td>Merged with 3.3.2–3.3.3</td></tr>
+    <tr><td class="k">3.3.2</td><td>Types of errors, recovery techniques</td><td>8</td><td>Merged; error table</td></tr>
+    <tr><td class="k">3.3.3</td><td>Recovery techniques, checkpoints, shadow paging</td><td>8</td><td>Merged; checkpoint diagrams</td></tr>
+    <tr><td class="k">—</td><td>Query processing and optimization (supplementary, not in the source)</td><td>12</td><td>Added on request; cost formulas from the standard model</td></tr>
+  </tbody>
+</table>
+<p class="small" style="margin-top:0">The source repeats the same recovery material across three chapters, so 3.3.1–3.3.3 are merged into one section. Reference lists, repeated introductions and duplicated explanations were removed.</p>
+
+<h3>Answer skeletons for the four big 10-mark questions</h3>
+<table style="font-size:7.6pt">
+  <thead><tr><th style="width:24%">Question</th><th style="width:46%">Write these headings, in this order</th><th style="width:30%">Finish with</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Explain database recovery techniques</td><td>1 Failure classification → 2 Log records and write-ahead rule → 3 Deferred vs immediate modification → 4 Undo and redo lists → 5 Checkpoint with diagram → 6 Shadow paging and backup types</td><td>One line: recovery guarantees atomicity and durability.</td></tr>
+    <tr><td class="k">Explain concurrency control</td><td>1 Four problems with examples → 2 Serializability and precedence graph → 3 Lock-based: 2PL, strict 2PL → 4 Timestamp ordering rules → 5 Optimistic three phases</td><td>Comparison line: locking waits, TO and optimistic abort.</td></tr>
+    <tr><td class="k">Explain query processing and optimization</td><td>1 Four steps with diagram → 2 Cost model and catalog statistics → 3 Heuristic rules → 4 Selection and join algorithms with costs → 5 Cost-based optimization → 6 Worked plan comparison</td><td>One line: optimization changes cost, never the answer.</td></tr>
+    <tr><td class="k">Explain PL/SQL subprograms</td><td>1 Subprogram definition → 2 Procedure syntax and characteristics → 3 Function syntax and characteristics → 4 Parameter modes → 5 Trigger syntax with OLD/NEW → 6 Package specification and body</td><td>Comparison table: procedure vs function.</td></tr>
+  </tbody>
+</table>
+<h3>Before you close this PDF — traps flagged from the source</h3>
+<div class="flag" style="margin-top:1mm">
+  <span class="lbl">Check list</span>
+  <ul class="tight" style="margin-bottom:0">
+    <li>RAM is <b>volatile</b>, not non-volatile (the source's example list is wrong).</li>
+    <li>2PL forbids <b>acquiring</b> a lock after any release — not the other way round.</li>
+    <li>In deferred mode, a crash before commit needs <b>no undo</b>.</li>
+    <li>Basic timestamp ordering is deadlock-free but <b>not</b> cascade-free / recoverable.</li>
+    <li>:OLD and :NEW do <b>not</b> exist for table-level triggers, and are null for INSERT/OLD rows on DELETE.</li>
+    <li>View serializability is only <b>named</b> in the source — no method is given.</li>
+  </ul>
+</div>
+
+
+<div class="closing">
+  <div>
+    <h4>The last hour</h4>
+    <ol class="tight">
+      <li>Re-draw the five diagrams from memory and check them against Sections 2, 5, 8 and 12.</li>
+      <li>Recite the ten-minute recall list aloud without looking.</li>
+      <li>Re-read the traps box above — these are the marks students lose most often.</li>
+      <li>Stop. Do not open a new topic.</li>
+    </ol>
+  </div>
+  <div>
+    <h4>Can you do these without the notes?</h4>
+    <ul class="tight check">
+      <li>Write the ACID table with one example each.</li>
+      <li>Draw a precedence graph and decide serializability.</li>
+      <li>Draw the 2PL growing/shrinking timeline with the lock point.</li>
+      <li>Apply the timestamp read/write rules to one conflict.</li>
+      <li>Draw the crash-recovery flow with undo and redo.</li>
+      <li>Write a trigger and a package specification from memory.</li>
+      <li>Cost two plans for the same two-table join.</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!-- ================= 1 TRANSACTIONS ================= -->
+<section class="pagebreak">
+<h2 class="sec"><span class="num">1</span><span class="mk">§S01</span> Transactions &amp; ACID <span class="sub">source 3.2.1 – 3.2.2</span></h2>
+
+<div class="def">
+  <span class="lbl">Definition — must learn</span>
+  <p>A <b>transaction</b> is a group of tasks (a program unit) executed as a <b>single logical unit</b> whose execution may or may not change the contents of the database. It is a <b>set of changes that must all be made together</b>: either every operation is executed, or none is. If the database was consistent before the transaction, it must be consistent after it.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h3>Why “all together” — the transfer example</h3>
+<p>A bank employee transfers Rs 500 from A to B. This “simple” transaction is several low-level tasks:</p>
+<pre>A's account
+  Open_Account(A)
+  Old_Balance = A.balance
+  New_Balance = Old_Balance - 500
+  A.balance   = New_Balance
+  Close_Account(A)
+B's account
+  Open_Account(B)
+  Old_Balance = B.balance
+  New_Balance = Old_Balance + 500
+  B.balance   = New_Balance
+  Close_Account(B)</pre>
+<p class="small">If the machine crashes between the two updates, money is lost (debit done, credit not done). Doing the credit first gives the customer free money. Hence both changes must succeed or both must fail.</p>
+</div>
+<div>
+<h3>Process: read and write</h3>
+<ul class="tight">
+  <li><b>Read:</b> the object is brought from disk into main memory, and its value is copied into a program variable.</li>
+  <li><b>Write:</b> the in-memory copy of the object is modified, then written back to disk.</li>
+</ul>
+<h3>Transaction operations</h3>
+<table>
+  <tbody>
+    <tr><td class="k">begin_transaction</td><td>Marker: transaction execution starts.</td></tr>
+    <tr><td class="k">read_item(X)</td><td>Reads database item X into a program variable.</td></tr>
+    <tr><td class="k">write_item(X)</td><td>Writes the modified value of X to the database.</td></tr>
+    <tr><td class="k">end_transaction</td><td>Marker: transaction execution ends.</td></tr>
+    <tr><td class="k">commit</td><td>All operations completed; changes are permanent and cannot be undone.</td></tr>
+    <tr><td class="k">rollback</td><td>Transaction unsuccessful; all temporary changes are undone.</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<h3>ACID properties <span class="tag must">Must learn</span></h3>
+<table>
+  <thead><tr><th style="width:15%">Property</th><th style="width:40%">Meaning</th><th style="width:45%">Guarantee / who ensures it</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Atomicity<br><span class="small">“all or nothing”</span></td><td>Either all operations of the transaction are performed or none. No state where a transaction is half-completed.</td><td>Maintained by the <b>recovery-management component</b>: it keeps old values of any write and restores them if the transaction does not complete.</td></tr>
+    <tr><td class="k">Consistency<br><span class="small">no integrity violation</span></td><td>A transaction must preserve database consistency. In the transfer example, A + B must be unchanged.</td><td>Responsibility of the <b>application programmer</b> who writes the transaction (the DBMS assumes it holds).</td></tr>
+    <tr><td class="k">Isolation<br><span class="small">concurrent changes invisible</span></td><td>Concurrent transactions must behave as if executed serially in some order. Data used by one transaction cannot be used by a second until the first finishes.</td><td>Responsibility of the <b>concurrency-control component</b> (locks, timestamps, validation).</td></tr>
+    <tr><td class="k">Durability<br><span class="small">committed updates persist</span></td><td>Once committed, the effect of the transaction is never lost, even after a later crash.</td><td>Responsibility of the <b>recovery-management component</b> (logs on stable storage, checkpoints).</td></tr>
+  </tbody>
+</table>
+<p class="note">Example of a failed isolation: T1 transfers 50 (A: 1000→950, B: 2000→2050) while T2 reads A and B mid-way and prints 2950 instead of 3000.</p>
+
+<h3>States of a transaction <span class="tag must">Must learn</span></h3>
+<figure>
+<svg viewBox="0 0 470 118" width="470" height="118" font-family="DejaVu Sans" font-size="7.5">
+  <defs>
+    <marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 z" fill="#123a63"/>
+    </marker>
+  </defs>
+  <rect x="6" y="26" width="82" height="22" rx="3" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/>
+  <text x="47" y="40" text-anchor="middle" fill="#123a63" font-weight="bold">Active</text>
+  <rect x="128" y="26" width="112" height="22" rx="3" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/>
+  <text x="184" y="40" text-anchor="middle" fill="#123a63" font-weight="bold">Partially committed</text>
+  <rect x="280" y="26" width="86" height="22" rx="3" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.9"/>
+  <text x="323" y="40" text-anchor="middle" fill="#0e6f66" font-weight="bold">Committed</text>
+  <rect x="128" y="82" width="82" height="22" rx="3" fill="#fdf1ee" stroke="#a4402f" stroke-width="0.8"/>
+  <text x="169" y="96" text-anchor="middle" fill="#a4402f" font-weight="bold">Failed</text>
+  <rect x="250" y="82" width="82" height="22" rx="3" fill="#fdf1ee" stroke="#a4402f" stroke-width="0.8"/>
+  <text x="291" y="96" text-anchor="middle" fill="#a4402f" font-weight="bold">Aborted</text>
+  <line x1="88" y1="37" x2="124" y2="37" stroke="#123a63" stroke-width="0.8" marker-end="url(#ar)"/>
+  <line x1="240" y1="37" x2="276" y2="37" stroke="#123a63" stroke-width="0.8" marker-end="url(#ar)"/>
+  <line x1="50" y1="48" x2="122" y2="82" stroke="#a4402f" stroke-width="0.8" marker-end="url(#ar)"/>
+  <line x1="184" y1="48" x2="172" y2="78" stroke="#a4402f" stroke-width="0.8" marker-end="url(#ar)"/>
+  <line x1="210" y1="93" x2="246" y2="93" stroke="#a4402f" stroke-width="0.8" marker-end="url(#ar)"/>
+  <path d="M291,82 C291,60 323,58 323,52" fill="none" stroke="#0e6f66" stroke-width="0.7" stroke-dasharray="2,2" marker-end="url(#ar)"/>
+  <text x="300" y="66" fill="#0e6f66" font-size="6.6">rollback</text>
+  <text x="196" y="70" fill="#a4402f" font-size="6.6">error</text>
+</svg>
+<figcaption>Transaction state transition. Aborted → re-start the transaction or kill it.</figcaption>
+</figure>
+
+<table>
+  <thead><tr><th style="width:18%">State</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Active</td><td>Initial state; the transaction is executing.</td></tr>
+    <tr><td class="k">Partially committed</td><td>After the final statement has been executed. Output may still be in main memory, so the transaction can still fail.</td></tr>
+    <tr><td class="k">Failed</td><td>Normal execution can no longer proceed (a recovery-system check failed).</td></tr>
+    <tr><td class="k">Aborted</td><td>After rollback; the database is restored to its state before the transaction started. Then restart or kill.</td></tr>
+    <tr><td class="k">Committed</td><td>After successful completion; effects are permanently established.</td></tr>
+  </tbody>
+</table>
+<p class="note">A transaction is <b>terminated</b> if it has committed or aborted. A transaction can be committed only if it has entered the committed state.</p>
+
+<h3>Schedules and conflicts</h3>
+<div class="grid2">
+<div>
+<p>A <b>schedule</b> is the total order in which the operations of several transactions appear for execution.</p>
+<ul class="tight">
+  <li><b>Serial schedule:</b> only one transaction is active at a time; no overlap.</li>
+  <li><b>Parallel (non-serial) schedule:</b> more than one transaction is active; operations overlap in time.</li>
+</ul>
+</div>
+<div class="def" style="margin-top:0">
+  <span class="lbl">Conflicting operations — 3 conditions</span>
+  <p>Two operations conflict when <b>(1)</b> they belong to <b>different transactions</b>, <b>(2)</b> they access the <b>same data item</b>, and <b>(3)</b> <b>at least one is a write</b>. Read–read never conflicts.</p>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Transactions</span>
+  <ul>
+    <li><b>2 marks:</b> define transaction; define schedule; list the five states; state the three conditions for a conflict.</li>
+    <li><b>5 marks:</b> explain ACID with the A/B transfer example; explain the state diagram and why “partially committed” is not yet safe.</li>
+    <li><b>10 marks:</b> “What is a transaction? Explain ACID properties and states with a diagram.” → definition, transfer example, four-property table, state diagram, one line on why concurrency is still allowed.</li>
+    <li class="q">Likely questions: (i) Define transaction and ACID. (ii) Explain the states of a transaction. (iii) Why must a transaction be atomic? Illustrate with the fund-transfer example.</li>
+  </ul>
+</div>
+</section>

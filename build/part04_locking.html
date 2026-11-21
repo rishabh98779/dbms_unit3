@@ -1,0 +1,180 @@
+<!-- ================= 5 LOCKING ================= -->
+<section>
+<h2 class="sec"><span class="num">5</span><span class="mk">§S05</span> Locking &amp; Two-Phase Locking <span class="sub">source 3.2.6</span></h2>
+
+<div class="def">
+  <span class="lbl">Lock — must learn</span>
+  <p>A <b>lock</b> is a variable associated with a data item that describes the status of that item with respect to the operations that may be applied to it. It is the mechanism used to <b>synchronize access</b> by concurrent transactions. A transaction cannot read or write an item until it acquires an appropriate lock, and all lock requests go to the <b>concurrency-control (lock) manager</b>.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h3>Binary locks</h3>
+<p>Two states: <b>locked (1)</b> and <b>unlocked (0)</b>. Operations: <span class="mono">lock_item(A)</span>, <span class="mono">unlock_item(A)</span>.</p>
+<table style="font-size:7.6pt">
+  <thead><tr><th style="width:8%">#</th><th>Rule every transaction must obey</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Issue <span class="mono">lock_item(A)</span> before any read or write of A.</td></tr>
+    <tr><td>2</td><td>Issue <span class="mono">unlock_item(A)</span> after all reads/writes of A are completed.</td></tr>
+    <tr><td>3</td><td>Do not lock A if the lock on A is already held.</td></tr>
+    <tr><td>4</td><td>Do not unlock A unless the lock is held.</td></tr>
+    <tr><td>5</td><td>The lock manager enforces these rules; at most one transaction holds a lock on an item.</td></tr>
+  </tbody>
+</table>
+<p class="small"><b>Drawback:</b> too restrictive — it enforces mutual exclusion even for two readers, so it is not used in practice.</p>
+</div>
+<div>
+<h3>Shared / exclusive locks</h3>
+<ul class="tight">
+  <li><b>Shared lock S</b> (read lock) — <span class="mono">lock-S(Q)</span>: item may be read by several transactions; cannot be updated.</li>
+  <li><b>Exclusive lock X</b> (write lock) — <span class="mono">lock-X(Q)</span>: item may be read and written, but by one transaction only.</li>
+  <li><span class="mono">unlock(Q)</span> releases either mode.</li>
+</ul>
+<table style="margin-bottom:1.6mm">
+  <caption>Compatibility: can the request be granted?</caption>
+  <thead><tr><th style="width:34%">Held ↓ / Requested →</th><th style="width:33%">S</th><th style="width:33%">X</th></tr></thead>
+  <tbody>
+    <tr><td class="k">S</td><td>✓ granted</td><td>✗ wait</td></tr>
+    <tr><td class="k">X</td><td>✗ wait</td><td>✗ wait</td></tr>
+  </tbody>
+</table>
+<p class="small">Two readers never conflict; a write conflicts with every other access. If a lock is incompatible, the requesting transaction waits until the holder releases it.</p>
+</div>
+</div>
+
+<h3>Four lock-based protocols <span class="tag must">Must learn</span></h3>
+<table>
+  <thead><tr><th style="width:18%">Protocol</th><th style="width:47%">Rule</th><th style="width:35%">Effect / drawback</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Simplistic</td><td>Lock every object before beginning an operation; unlock after the write is finished.</td><td>Simple but too many locks; no serializability guarantee.</td></tr>
+    <tr><td class="k">Pre-claiming</td><td>List all items needed, request <b>all</b> locks before execution. If all are granted the transaction runs; if not, it rolls back and waits. All locks released at the end.</td><td>Deadlock-free (no waiting while holding), but poor concurrency and wasted work.</td></tr>
+    <tr><td class="k">Two-phase locking (2PL)</td><td>Growing phase: acquire locks, release none. Shrinking phase: release locks, acquire none. The first unlock ends the growing phase.</td><td>Guarantees serializability; <b>does not</b> guarantee deadlock freedom.</td></tr>
+    <tr><td class="k">Strict 2PL</td><td>Same as 2PL, but <b>no lock is released until commit</b>; all locks are released together.</td><td>No shrinking phase, hence <b>no cascading abort</b>; still deadlock-prone.</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<figure style="margin-top:0">
+<svg viewBox="0 0 240 128" width="240" height="128" font-family="DejaVu Sans" font-size="6.6">
+  <text x="0" y="9" fill="#123a63" font-weight="bold" font-size="7.4">Transaction T1</text>
+  <rect x="0" y="14" width="74" height="15" fill="#dceaf8" stroke="#123a63" stroke-width="0.6"/>
+  <text x="37" y="24.5" text-anchor="middle" fill="#123a63" font-size="6.4">growing 1–3</text>
+  <rect x="74" y="14" width="50" height="15" fill="#f1f4f8" stroke="#123a63" stroke-width="0.6"/>
+  <text x="99" y="24.5" text-anchor="middle" fill="#5b6b7b" font-size="6.4">hold</text>
+  <rect x="124" y="14" width="74" height="15" fill="#f2e9d8" stroke="#8a5a12" stroke-width="0.6"/>
+  <text x="161" y="24.5" text-anchor="middle" fill="#8a5a12" font-size="6.4">shrinking 5–7</text>
+  <line x1="74" y1="10" x2="74" y2="34" stroke="#0e6f66" stroke-width="1.1"/>
+  <text x="74" y="41" text-anchor="middle" fill="#0e6f66" font-size="6.3">lock point</text>
+
+  <text x="0" y="61" fill="#123a63" font-weight="bold" font-size="7.4">Transaction T2</text>
+  <rect x="0" y="66" width="36" height="15" fill="#fff" stroke="#d3dde7" stroke-width="0.6"/>
+  <rect x="36" y="66" width="112" height="15" fill="#dceaf8" stroke="#123a63" stroke-width="0.6"/>
+  <text x="92" y="76.5" text-anchor="middle" fill="#123a63" font-size="6.4">growing 2–6</text>
+  <rect x="148" y="66" width="50" height="15" fill="#f2e9d8" stroke="#8a5a12" stroke-width="0.6"/>
+  <text x="173" y="76.5" text-anchor="middle" fill="#8a5a12" font-size="6.4">shrink 8–9</text>
+  <line x1="148" y1="62" x2="148" y2="86" stroke="#0e6f66" stroke-width="1.1"/>
+  <text x="148" y="93" text-anchor="middle" fill="#0e6f66" font-size="6.3">lock point</text>
+
+  <line x1="0" y1="104" x2="200" y2="104" stroke="#5b6b7b" stroke-width="0.5"/>
+  <text x="204" y="107" fill="#5b6b7b" font-size="6.2">time →</text>
+  <text x="0" y="120" fill="#5b6b7b" font-size="6.4">Lock point = moment of maximum locks held.</text>
+</svg>
+<figcaption>Growing → shrinking. No new lock after the first unlock.</figcaption>
+</figure>
+</div>
+<div>
+<h4>Lock conversion</h4>
+<ul class="tight">
+  <li><b>Upgrade</b> S(a) → X(a) is allowed only in the <b>growing</b> phase.</li>
+  <li><b>Downgrade</b> X(a) → S(a) must be done in the <b>shrinking</b> phase.</li>
+</ul>
+<div class="flag" style="margin-top:2mm">
+  <span class="lbl">Check this point</span>
+  The source summary says “2PL needs a transaction to acquire a lock <i>after</i> it releases one of its locks”. That is the opposite of the protocol. Correct statement: <b>after releasing any lock, a transaction can acquire no new lock</b>.
+</div>
+</div>
+</div>
+
+<h3>Implementation: lock manager and lock table</h3>
+<div class="grid2">
+<div>
+<p>The <b>lock manager</b> handles lock/unlock requests by <b>message passing</b> with transactions. Its data structure is the <b>lock table</b>:</p>
+<ul class="tight">
+  <li>A <b>hash table</b> indexed by the name of the data item.</li>
+  <li>Each locked item heads a <b>linked list</b> of requests.</li>
+  <li>Each node stores: transaction id, lock mode (shared/exclusive), status (granted/waiting).</li>
+  <li>New requests are appended at the end of the list (queue).</li>
+  <li>Hash collisions are handled by <b>separate chaining</b>.</li>
+</ul>
+</div>
+<div>
+<h4>Working of the lock manager</h4>
+<ol class="steps" style="margin-bottom:1.2mm">
+  <li>Table starts empty (nothing locked).</li>
+  <li>Request for Q: if Q is free, create the list and grant the lock.</li>
+  <li>If Q is locked, append a node; grant it immediately if the mode is compatible, otherwise mark it <i>waiting</i>.</li>
+  <li>On unlock, delete that node and grant the lock to the next compatible waiting transaction.</li>
+  <li>On abort, delete all of the transaction's waiting requests, then release its held locks.</li>
+</ol>
+</div>
+</div>
+
+<div class="grid2">
+<div>
+<h3>Starvation and deadlock</h3>
+<div class="def" style="margin-bottom:2mm">
+  <span class="lbl">Starvation</span>
+  <p>A transaction waits for an <b>indefinite period</b> to acquire a lock. Causes: waiting scheme not managed properly; resource leak; the <b>same transaction chosen as victim repeatedly</b>.</p>
+</div>
+<div class="def" style="margin-bottom:0">
+  <span class="lbl">Deadlock</span>
+  <p>Two or more transactions wait for each other to release resources in a <b>circular chain</b>, so none can proceed. Handled by rolling back a victim (local/global deadlock detectors in distributed systems).</p>
+</div>
+</div>
+<div>
+<figure style="margin-top:0">
+<svg viewBox="0 0 240 104" width="240" height="104" font-family="DejaVu Sans" font-size="6.4">
+  <defs><marker id="ardl" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 z" fill="#a4402f"/></marker></defs>
+  <rect x="18" y="8" width="70" height="22" rx="2" fill="#eef4fb" stroke="#123a63" stroke-width="0.7"/>
+  <text x="53" y="22" text-anchor="middle" fill="#123a63" font-weight="bold">T3</text>
+  <rect x="152" y="8" width="70" height="22" rx="2" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.7"/>
+  <text x="187" y="22" text-anchor="middle" fill="#0e6f66" font-weight="bold">T4</text>
+  <rect x="18" y="66" width="70" height="20" rx="2" fill="#fdf1ee" stroke="#a4402f" stroke-width="0.7"/>
+  <text x="53" y="79" text-anchor="middle" fill="#a4402f">B locked X</text>
+  <rect x="152" y="66" width="70" height="20" rx="2" fill="#fdf1ee" stroke="#a4402f" stroke-width="0.7"/>
+  <text x="187" y="79" text-anchor="middle" fill="#a4402f">A locked S</text>
+  <line x1="88" y1="16" x2="148" y2="16" stroke="#a4402f" stroke-width="0.8" marker-end="url(#ardl)"/>
+  <text x="118" y="13" text-anchor="middle" fill="#a4402f" font-size="6.1">wants S(B)</text>
+  <line x1="152" y1="25" x2="92" y2="25" stroke="#a4402f" stroke-width="0.8" marker-end="url(#ardl)"/>
+  <text x="118" y="35" text-anchor="middle" fill="#a4402f" font-size="6.1">wants X(A)</text>
+  <line x1="53" y1="30" x2="53" y2="66" stroke="#5b6b7b" stroke-width="0.6" stroke-dasharray="2,2"/>
+  <line x1="187" y1="30" x2="187" y2="66" stroke="#5b6b7b" stroke-width="0.6" stroke-dasharray="2,2"/>
+  <text x="120" y="98" text-anchor="middle" fill="#5b6b7b" font-size="6.2">each holds what the other needs</text>
+</svg>
+<figcaption>Circular wait: T3 holds X(B) and needs A; T4 holds S(A) and needs B.</figcaption>
+</figure>
+</div>
+</div>
+<p class="note"><b>Design conclusion (from the source):</b> not using locks gives inconsistent states; unlocking too early also gives inconsistent states; never unlocking before requesting the next lock causes deadlock. Deadlock is preferable to inconsistency because a deadlock can be resolved by rollback, while an inconsistent database may cause real-world damage.</p>
+
+<h3>Distributed 2PL variants</h3>
+<table>
+  <thead><tr><th style="width:20%">Variant</th><th style="width:45%">Who manages locks</th><th style="width:35%">Characteristic</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Centralized 2PL</td><td>One designated site is the central lock manager; every site obtains locks from it.</td><td>Single point of control and of failure; simple but a bottleneck.</td></tr>
+    <tr><td class="k">Primary copy 2PL</td><td>Several sites act as lock control centres, each responsible for a defined set of locks.</td><td>When the primary copy is updated, the change is propagated to the slaves.</td></tr>
+    <tr><td class="k">Distributed 2PL</td><td>Every site has a lock manager controlling locks for data stored locally.</td><td>With no replication it equals primary copy; communication cost is higher.</td></tr>
+  </tbody>
+</table>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Locking</span>
+  <ul>
+    <li><b>2 marks:</b> define lock; difference between shared and exclusive lock; define deadlock and starvation; what is a lock point?</li>
+    <li><b>5 marks:</b> explain 2PL with the growing/shrinking diagram; explain the lock table with separate chaining.</li>
+    <li><b>10 marks:</b> “Explain lock-based protocols. How does 2PL guarantee serializability, and why can it still deadlock?” → lock types, compatibility matrix, four protocols table, 2PL diagram, deadlock example, strict 2PL as the fix for cascading aborts.</li>
+    <li class="q">Likely questions: (i) Differentiate 2PL and strict 2PL. (ii) Explain lock manager and lock table. (iii) Show how locking can cause deadlock. (iv) Why do binary locks reduce concurrency?</li>
+  </ul>
+</div>
+</section>

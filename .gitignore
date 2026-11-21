@@ -1,0 +1,15 @@
+# Build intermediates
+build/notes.html
+build/notes_final.html
+build/final_raw.pdf
+build/raw.pdf
+build/png/
+build/sheet.png
+build/figs/*.html
+build/figs/*.txt
+__pycache__/
+
+# Source material (not redistributed)
+*.pdf
+!DBMS_One_Day_Exam_Notes.pdf
+extracted.txt
