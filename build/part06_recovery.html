@@ -1,0 +1,245 @@
+<!-- ================= 8 RECOVERY ================= -->
+<section>
+<h2 class="sec"><span class="num">8</span><span class="mk">§S08</span> Database Recovery <span class="sub">source 3.3.1 – 3.3.3</span></h2>
+
+<div class="def">
+  <span class="lbl">Definition — must learn</span>
+  <p><b>Database recovery</b> is the process of restoring the database to its correct (last consistent) state after a failure — a system crash, transaction error, incorrect command, virus, hacking, disk damage or a catastrophic event — so that committed work is never lost and no transaction is left half-done.</p>
+</div>
+
+<div class="grid2">
+<div>
+<h3>Why recovery is needed</h3>
+<ul class="tight">
+  <li>Data must be available whenever it is required; a DBMS must hold tools that recover data efficiently.</li>
+  <li>It must guarantee <b>atomicity</b>: a transaction's effects are either permanently recorded or absent.</li>
+  <li><b>Dependability</b> = the flexibility of the DBMS to different failures <i>plus</i> its ability to recover from them.</li>
+  <li>Two things must be considered whatever the cause: failure of <b>main memory</b> (including database buffers) and failure of the <b>disk copy</b> of the database.</li>
+</ul>
+<h4>Sources of failure (3.3.1)</h4>
+<ul class="tight">
+  <li>Hardware/software errors → system crash → loss of main memory.</li>
+  <li>Media failure (head crash, unreadable media) → loss of part of secondary storage.</li>
+  <li>Application software/logical errors → transactions abort.</li>
+  <li>Natural disasters: fire, flood, earthquake, power failure.</li>
+  <li>Carelessness of operators/users; malicious corruption (viruses).</li>
+</ul>
+</div>
+<div>
+<h3>Classification of failures</h3>
+<table style="font-size:7.7pt">
+  <thead><tr><th style="width:26%">Type</th><th>Meaning and causes</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Transaction failure</td><td>A transaction must terminate because it cannot proceed. <b>Logical error</b> — bad code or an internal error condition. <b>System error</b> — the DBMS cannot execute the active transaction or must abort it (e.g. resource problem). Only a few transactions are affected.</td></tr>
+    <tr><td class="k">System crash</td><td>External problems stop the system abruptly: power interruption, OS error, hardware failure. Main memory (and buffers) are lost; disk survives.</td></tr>
+    <tr><td class="k">Disk failure</td><td>Bad sectors, disk inaccessibility, head crash, or any failure that destroys all or part of disk storage. Requires restoring from backup.</td></tr>
+  </tbody>
+</table>
+<h4>Storage structure</h4>
+<table style="font-size:7.7pt; margin-bottom:1.6mm">
+  <thead><tr><th style="width:26%">Type</th><th>Behaviour</th><th style="width:34%">Examples</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Volatile</td><td>Cannot survive a system crash; close to the CPU.</td><td>Main memory, cache memory</td></tr>
+    <tr><td class="k">Non-volatile</td><td>Survives a crash; large capacity but slower access.</td><td>Hard disks, magnetic tapes, flash memory</td></tr>
+  </tbody>
+</table>
+<div class="flag" style="margin-bottom:0">
+  <span class="lbl">Check this point</span>
+  The source lists <b>RAM</b> as an example of non-volatile storage. That is wrong — RAM is volatile. Write “hard disk, magnetic tape, flash memory” in the exam.
+</div>
+</div>
+</div>
+
+<h3>Recovery facilities every DBMS should provide</h3>
+<table>
+  <thead><tr><th style="width:22%">Facility</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Backup mechanism</td><td>Makes backup copies of the database at specified intervals.</td></tr>
+    <tr><td class="k">Logging facilities</td><td>Continuously trace the current state of transactions and every change made to the database.</td></tr>
+    <tr><td class="k">Checkpoint facility</td><td>Makes updates permanent up to a point, so recovery can start from there instead of the beginning.</td></tr>
+    <tr><td class="k">Recovery manager</td><td>Restores the database to a consistent state after any failure.</td></tr>
+  </tbody>
+</table>
+
+<h3>Log-based recovery <span class="tag must">Must learn</span></h3>
+<div class="grid2">
+<div>
+<p>A <b>log</b> (system log / journal) is a sequence of records describing every operation that affects database values, kept on <b>stable storage</b>. A log record is written <b>before</b> the database is modified (write-ahead rule).</p>
+<table style="font-size:7.6pt">
+  <thead><tr><th style="width:33%">Record</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td class="k">&lt;T<sub>i</sub>, Start&gt;</td><td>Transaction T<sub>i</sub> has started.</td></tr>
+    <tr><td class="k">&lt;T<sub>i</sub>, X<sub>j</sub>, V<sub>1</sub>, V<sub>2</sub>&gt;</td><td>T<sub>i</sub> wrote X<sub>j</sub>: V<sub>1</sub> = old value (<b>before image</b>), V<sub>2</sub> = new value (<b>after image</b>).</td></tr>
+    <tr><td class="k">&lt;T<sub>i</sub>, Commit&gt;</td><td>Completed successfully; effects are permanent.</td></tr>
+    <tr><td class="k">&lt;T<sub>i</sub>, Abort&gt;</td><td>Rolled back; effects must be removed.</td></tr>
+  </tbody>
+</table>
+</div>
+<div>
+<figure style="margin-top:0">
+<svg viewBox="0 0 250 132" width="250" height="132" font-family="DejaVu Sans" font-size="6.6">
+  <defs><marker id="arf" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 z" fill="#5b6b7b"/></marker></defs>
+  <rect x="12" y="4" width="70" height="18" rx="2" fill="#123a63"/>
+  <text x="47" y="16" text-anchor="middle" fill="#fff">Crash</text>
+  <rect x="12" y="36" width="104" height="18" rx="2" fill="#eef4fb" stroke="#123a63" stroke-width="0.6"/>
+  <text x="64" y="48" text-anchor="middle" fill="#123a63">Scan log backwards</text>
+  <rect x="128" y="36" width="110" height="18" rx="2" fill="#eef4fb" stroke="#123a63" stroke-width="0.6"/>
+  <text x="183" y="48" text-anchor="middle" fill="#123a63">Build undo / redo lists</text>
+  <rect x="12" y="70" width="104" height="18" rx="2" fill="#fdf1ee" stroke="#a4402f" stroke-width="0.7"/>
+  <text x="64" y="82" text-anchor="middle" fill="#a4402f">Start, no commit → UNDO</text>
+  <rect x="128" y="70" width="110" height="18" rx="2" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.7"/>
+  <text x="183" y="82" text-anchor="middle" fill="#0e6f66">Start + commit → REDO</text>
+  <rect x="12" y="100" width="104" height="26" rx="2" fill="#fff" stroke="#a4402f" stroke-width="0.6"/>
+  <text x="64" y="110" text-anchor="middle" fill="#a4402f" font-size="6.3">restore old values</text>
+  <text x="64" y="119" text-anchor="middle" fill="#a4402f" font-size="6.3">(before images)</text>
+  <rect x="128" y="100" width="110" height="26" rx="2" fill="#fff" stroke="#0e6f66" stroke-width="0.6"/>
+  <text x="183" y="110" text-anchor="middle" fill="#0e6f66" font-size="6.3">re-apply new values</text>
+  <text x="183" y="119" text-anchor="middle" fill="#0e6f66" font-size="6.3">(after images)</text>
+  <g stroke="#5b6b7b" stroke-width="0.6" marker-end="url(#arf)">
+    <line x1="47" y1="22" x2="47" y2="35"/>
+    <line x1="116" y1="45" x2="127" y2="45"/>
+    <line x1="64" y1="54" x2="64" y2="69"/>
+    <line x1="183" y1="54" x2="183" y2="69"/>
+    <line x1="64" y1="88" x2="64" y2="99"/>
+    <line x1="183" y1="88" x2="183" y2="99"/>
+  </g>
+</svg>
+<figcaption>Recovery decision after a crash. Undo is performed first, then redo; both are idempotent.</figcaption>
+</figure>
+</div>
+</div>
+
+<h3>Deferred vs immediate database modification <span class="tag must">Must learn</span></h3>
+<table>
+  <thead><tr><th style="width:20%">Point</th><th style="width:40%">Deferred modification</th><th style="width:40%">Immediate modification</th></tr></thead>
+  <tbody>
+    <tr><td class="k">When is the database written?</td><td>Only after the transaction reaches its commit point; before that, updates stay in the local workspace / log.</td><td>While the transaction is still active — each write is applied to the database as soon as it is logged.</td></tr>
+    <tr><td class="k">Log needs</td><td>New value is enough (old value not needed for undo).</td><td>Both old and new values: <span class="mono">&lt;T<sub>i</sub>, X<sub>j</sub>, V(old), V(new)&gt;</span>.</td></tr>
+    <tr><td class="k">On failure before commit</td><td>Database unchanged → <b>no UNDO needed</b>; simply ignore the log entries.</td><td>Database already changed → <b>UNDO</b> using before images.</td></tr>
+    <tr><td class="k">On failure after commit</td><td><b>REDO</b> from the log — the writes may not yet be on disk.</td><td><b>REDO</b> only if the commit record reached stable storage; otherwise undo.</td></tr>
+    <tr><td class="k">Other name</td><td><b>No-undo / redo</b> algorithm</td><td><b>Undo / redo</b> algorithm</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h4>Worked log (A = B = 1000 initially)</h4>
+<pre>T1: &lt;T1,Start&gt;  &lt;T1,A,1000,900&gt;  &lt;T1,B,1000,2100&gt;  &lt;T1,Commit&gt;
+T2: &lt;T2,Start&gt;  &lt;T2,C,3000,2800&gt;  &lt;T2,Commit&gt;
+
+Crash after &lt;T2,C,3000,2800&gt;, before &lt;T2,Commit&gt;
+→ T1: start + commit  ⇒ REDO  (A=900, B=2100)
+→ T2: start, no commit ⇒ UNDO  (C back to 3000)
+Final: A=900, B=2100, C=3000</pre>
+<p class="small">Redo re-applies <b>new</b> values; undo restores <b>old</b> values. Undo is done first, then redo. Repeating undo/redo must give the same result as doing it once.</p>
+</div>
+<div>
+<h4>Crash cases to write in the exam</h4>
+<ul class="tight">
+  <li><b>Immediate mode, crash after commit</b> → log has Start + Commit → REDO(T) sets the new values of A and B.</li>
+  <li><b>Immediate mode, crash before commit</b> → log has Start but no Commit → UNDO(T) restores old values, because the updates were already written to the database.</li>
+  <li><b>Deferred mode, crash after commit</b> → REDO(T) applies the logged new values.</li>
+  <li><b>Deferred mode, crash before commit</b> → nothing to undo (the database was never touched); the incomplete log is ignored.</li>
+</ul>
+<div class="flag" style="margin-bottom:0">
+  <span class="lbl">Check this point</span>
+  One passage of the source says that in deferred mode, on failure before commit, the recovery manager “will set the old value of data items”, and the next note says no UNDO is needed. The note is correct: in deferred mode the database still holds the old values, so <b>no undo action is required</b>.
+</div>
+</div>
+</div>
+
+<h3>Checkpoints</h3>
+<div class="grid2">
+<div>
+<p>Keeping every log in memory forever is impossible. A <b>checkpoint</b> is a point at which all previous logs are removed from the system and stored permanently on disk; it declares a point before which the DBMS was in a consistent state and all transactions were committed.</p>
+<h4>Actions performed at a checkpoint</h4>
+<ol class="steps">
+  <li>Write the checkpoint start record, with time and date, to the log on stable storage.</li>
+  <li>Copy all log records from memory buffers to the log on stable storage.</li>
+  <li>Write modified database buffers out to the physical database.</li>
+  <li>Write an end-of-checkpoint record and save its address where the recovery routine can find it at start-up.</li>
+</ol>
+<h4>Undo list / redo list</h4>
+<ul class="tight">
+  <li><b>Redo list:</b> transactions with &lt;T<sub>i</sub>, Start&gt; <b>and</b> &lt;T<sub>i</sub>, Commit&gt; (or just a commit record).</li>
+  <li><b>Undo list:</b> transactions with &lt;T<sub>i</sub>, Start&gt; but <b>no</b> commit or abort record.</li>
+</ul>
+<p class="small">Checkpoint frequency is a design choice: fixed time interval, transaction-consistent, action-consistent, or transaction-oriented checkpoint.</p>
+</div>
+<div>
+<figure style="margin-top:0">
+<svg viewBox="0 0 250 118" width="250" height="118" font-family="DejaVu Sans" font-size="7">
+  <defs><marker id="art" markerWidth="6" markerHeight="6" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 z" fill="#5b6b7b"/></marker></defs>
+  <line x1="34" y1="62" x2="238" y2="62" stroke="#5b6b7b" stroke-width="0.7" marker-end="url(#art)"/>
+  <line x1="120" y1="6" x2="120" y2="62" stroke="#0e6f66" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="120" y="13" text-anchor="middle" fill="#0e6f66" font-size="6.8">checkpoint</text>
+  <line x1="216" y1="6" x2="216" y2="62" stroke="#a4402f" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="216" y="13" text-anchor="middle" fill="#a4402f" font-size="6.8">crash</text>
+
+  <text x="4" y="24" fill="#123a63" font-size="6.8">T1</text>
+  <rect x="40" y="16" width="58" height="10" fill="#dceaf8" stroke="#123a63" stroke-width="0.6"/>
+  <circle cx="98" cy="21" r="2.6" fill="#0e6f66"/>
+
+  <text x="4" y="38" fill="#123a63" font-size="6.8">T2</text>
+  <rect x="46" y="30" width="112" height="10" fill="#dceaf8" stroke="#123a63" stroke-width="0.6"/>
+  <circle cx="158" cy="35" r="2.6" fill="#0e6f66"/>
+
+  <text x="4" y="52" fill="#123a63" font-size="6.8">T3</text>
+  <rect x="128" y="44" width="60" height="10" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.6"/>
+  <circle cx="188" cy="49" r="2.6" fill="#0e6f66"/>
+
+  <text x="4" y="66" fill="#a4402f" font-size="6.8">T4</text>
+  <rect x="134" y="56" width="82" height="10" fill="#fdf1ee" stroke="#a4402f" stroke-width="0.6"/>
+  <text x="34" y="76" fill="#5b6b7b" font-size="6.6">● = commit point</text>
+</svg>
+<figcaption>After a crash, only transactions that started or committed after the last checkpoint need action.</figcaption>
+</figure>
+<div class="box tint" style="margin-top:1.4mm">
+<ul class="tight" style="margin-bottom:0">
+  <li><b>T1</b> — committed before the checkpoint → nothing to do.</li>
+  <li><b>T2</b> — committed after the checkpoint → REDO.</li>
+  <li><b>T3</b> — started after the checkpoint and commits → REDO.</li>
+  <li><b>T4</b> — no commit record → UNDO.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<h3>Shadow paging, caching and backups</h3>
+<div class="grid2">
+<div>
+<h4>Shadow paging</h4>
+<ul class="tight">
+  <li>The database is divided into fixed-length <b>pages</b>. A <b>page table</b> with n entries points to the n pages.</li>
+  <li>At the start of the transaction, the current page table is copied to a <b>shadow page table</b>; both are identical.</li>
+  <li>During execution the <b>current</b> table is changed; the shadow table stays as it was.</li>
+  <li>When the changes are ready to become durable, the directory is updated to point to the new pages; on failure the shadow table restores the old state.</li>
+  <li>Provides <b>atomicity and durability</b> with <b>less disk access</b> than log methods.</li>
+</ul>
+<h4>Caching / buffering</h4>
+<p>Disk pages holding items to be updated are cached in main-memory buffers (the <b>DBMS cache</b>). A <b>directory</b> tracks which items are in the buffer, and each buffer has a <b>dirty bit</b>: 0 = not modified, 1 = modified and must be written back.</p>
+</div>
+<div>
+<h4>Backup techniques</h4>
+<table style="font-size:7.5pt">
+  <thead><tr><th style="width:30%">Type</th><th>What it stores</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Full backup</td><td>The whole database plus the metadata needed to restore it (including full-text catalogs), taken at predefined intervals.</td></tr>
+    <tr><td class="k">Differential</td><td>Only changes since the <b>last full backup</b>; if an item changed many times, the most recent version is stored. A full backup must be restored first.</td></tr>
+    <tr><td class="k">Transaction log</td><td>Every log entry / statement executed. Allows recovery to a <b>specific point in time</b>; even if data files are destroyed, no committed transaction is lost.</td></tr>
+  </tbody>
+</table>
+<p class="small">Recovery procedure in words: restore the last full backup → apply the latest differential backup → roll the transaction log forward to the desired point in time.</p>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Recovery</span>
+  <ul>
+    <li><b>2 marks:</b> define database recovery; name the four log record types; define checkpoint; define shadow paging; what is a dirty bit?</li>
+    <li><b>5 marks:</b> classify failures; explain deferred vs immediate modification with a crash case; explain undo and redo lists.</li>
+    <li><b>10 marks:</b> “Explain log-based recovery. How are undo and redo used after a crash?” → log structure, write-ahead rule, deferred/immediate table, worked log, checkpoint diagram. Or “Explain recovery techniques in DBMS” → failures, log-based, checkpoint, shadow paging, backups.</li>
+    <li class="q">Likely questions: (i) Differentiate deferred and immediate database modification. (ii) What happens at a checkpoint? (iii) How does shadow paging provide atomicity? (iv) Compare full, differential and transaction-log backup.</li>
+  </ul>
+</div>
+</section>

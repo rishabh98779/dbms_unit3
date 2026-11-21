@@ -1,0 +1,103 @@
+<!-- ================= 2 SERIALIZABILITY ================= -->
+<section>
+<h2 class="sec"><span class="num">2</span><span class="mk">§S02</span> Serializability <span class="sub">source 3.2.3</span></h2>
+
+<div class="def">
+  <span class="lbl">Definition — must learn</span>
+  <p>A <b>serializable schedule</b> is a non-serial schedule of <i>n</i> transactions that is <b>equivalent to some serial schedule</b> of those same <i>n</i> transactions. It always leaves the database in a consistent state. Every serial schedule is trivially serializable; a non-serial schedule must be <i>tested</i>.</p>
+</div>
+
+<h3>Serial vs serializable</h3>
+<table>
+  <thead><tr><th style="width:34%">Point</th><th style="width:33%">Serial schedule</th><th style="width:33%">Serializable schedule</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Concurrency</td><td>None; transactions run one after another.</td><td>Allowed; transactions interleave.</td></tr>
+    <tr><td class="k">Utilization</td><td>Lower resource utilization and CPU throughput.</td><td>Improves resource utilization and CPU throughput.</td></tr>
+    <tr><td class="k">Efficiency</td><td>Less efficient.</td><td>Always better than a serial schedule.</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h4>Two types</h4>
+<ol class="tight">
+  <li><b>Conflict serializability</b> — checked by swapping non-conflicting operations (precedence graph).</li>
+  <li><b>View serializability</b> — named by the source as the second type.</li>
+</ol>
+<p class="small" style="margin-bottom:0">Serializable schedules are always consistent, recoverable, cascadeless and strict.</p>
+</div>
+<div class="flag" style="margin-top:0">
+  <span class="lbl">Check this point</span>
+  The source lists view serializability but gives <b>no definition or method</b>. Do not invent one in the exam; write that it is the second type and that it is used where conflict serializability fails. Learn conflict serializability properly — that is the one fully explained.
+</div>
+</div>
+
+<h3>Conflict serializability — method <span class="tag must">Must learn</span></h3>
+<p>A schedule is conflict serializable if it can be converted into a serial schedule by <b>swapping non-conflicting operations</b>.</p>
+<div class="grid2">
+<div>
+<h4>Precedence (serialization) graph</h4>
+<p>Graph G = (V, E): one vertex per transaction; draw edge <b>T<sub>i</sub> → T<sub>j</sub></b> when:</p>
+<ul class="tight">
+  <li>T<sub>i</sub> <b>writes</b> Q before T<sub>j</sub> <b>reads</b> Q &nbsp;(W→R)</li>
+  <li>T<sub>i</sub> <b>reads</b> Q before T<sub>j</sub> <b>writes</b> Q &nbsp;(R→W)</li>
+  <li>T<sub>i</sub> <b>writes</b> Q before T<sub>j</sub> <b>writes</b> Q &nbsp;(W→W)</li>
+</ul>
+<p class="small">An edge means the first transaction must be executed before the second.</p>
+</div>
+<div>
+<h4>Four steps to answer an exam question</h4>
+<ol class="steps">
+  <li>List all conflicting operation pairs.</li>
+  <li>Draw one node per transaction.</li>
+  <li>Draw an edge T<sub>i</sub> → T<sub>j</sub> for each conflict pair.</li>
+  <li>Check for a cycle: <b>no cycle ⇒ conflict serializable</b>; cycle ⇒ not serializable.</li>
+</ol>
+<p class="small">Topological sort of the resulting DAG gives the equivalent serial order(s); there may be more than one.</p>
+</div>
+</div>
+
+<figure>
+<svg viewBox="0 0 500 152" width="500" height="152" font-family="DejaVu Sans" font-size="6.9">
+  <defs><marker id="ar2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#123a63"/></marker>
+  <marker id="ar3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#a4402f"/></marker></defs>
+
+  <text x="4" y="9" fill="#a4402f" font-weight="bold" font-size="7.8">(a) Cycle ⇒ NOT serializable</text>
+  <circle cx="60" cy="58" r="14" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/><text x="60" y="61" text-anchor="middle" fill="#123a63" font-weight="bold">T1</text>
+  <circle cx="180" cy="58" r="14" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/><text x="180" y="61" text-anchor="middle" fill="#123a63" font-weight="bold">T2</text>
+  <circle cx="120" cy="120" r="14" fill="#eef4fb" stroke="#123a63" stroke-width="0.8"/><text x="120" y="123" text-anchor="middle" fill="#123a63" font-weight="bold">T3</text>
+  <line x1="74" y1="54" x2="165" y2="54" stroke="#a4402f" stroke-width="0.9" marker-end="url(#ar3)"/>
+  <text x="120" y="49" fill="#a4402f" font-size="6.4" text-anchor="middle">W1(A) → R2(A)</text>
+  <line x1="171" y1="70" x2="134" y2="108" stroke="#a4402f" stroke-width="0.9" marker-end="url(#ar3)"/>
+  <text x="176" y="96" fill="#a4402f" font-size="6.4">W2(B) → R3(B)</text>
+  <line x1="107" y1="109" x2="71" y2="71" stroke="#a4402f" stroke-width="0.9" marker-end="url(#ar3)"/>
+  <text x="2" y="98" fill="#a4402f" font-size="6.4">W3(C) → R1(C)</text>
+  <text x="60" y="146" fill="#5b6b7b" font-size="6.5" text-anchor="middle">T1 → T2 → T3 → T1</text>
+
+  <line x1="252" y1="4" x2="252" y2="148" stroke="#d3dde7" stroke-width="0.6"/>
+
+  <text x="266" y="9" fill="#0e6f66" font-weight="bold" font-size="7.8">(b) Acyclic ⇒ serializable</text>
+  <circle cx="300" cy="62" r="14" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.8"/><text x="300" y="65" text-anchor="middle" fill="#0e6f66" font-weight="bold">T4</text>
+  <circle cx="392" cy="34" r="14" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.8"/><text x="392" y="37" text-anchor="middle" fill="#0e6f66" font-weight="bold">T5</text>
+  <circle cx="392" cy="104" r="14" fill="#e8f4f2" stroke="#0e6f66" stroke-width="0.8"/><text x="392" y="107" text-anchor="middle" fill="#0e6f66" font-weight="bold">T6</text>
+  <line x1="311" y1="55" x2="377" y2="39" stroke="#123a63" stroke-width="0.9" marker-end="url(#ar2)"/>
+  <text x="322" y="41" fill="#123a63" font-size="6.4">W4(A)</text>
+  <line x1="312" y1="69" x2="377" y2="97" stroke="#123a63" stroke-width="0.9" marker-end="url(#ar2)"/>
+  <text x="318" y="96" fill="#123a63" font-size="6.4">W4(C)</text>
+  <line x1="392" y1="48" x2="392" y2="89" stroke="#123a63" stroke-width="0.9" marker-end="url(#ar2)"/>
+  <text x="397" y="72" fill="#123a63" font-size="6.4">W5(B)</text>
+  <text x="300" y="140" fill="#5b6b7b" font-size="6.5">serial order: T4 → T5 → T6</text>
+</svg>
+<figcaption>Testing with the precedence graph: a cycle (left) proves non-serializability; a DAG (right) gives the equivalent serial order.</figcaption>
+</figure>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Serializability</span>
+  <ul>
+    <li><b>2 marks:</b> define serializable schedule; define conflicting operations; what does a cycle in the precedence graph prove?</li>
+    <li><b>5 marks:</b> test a given schedule for conflict serializability using the four steps; write the equivalent serial order.</li>
+    <li><b>10 marks:</b> “Explain serializability. Differentiate serial and serializable schedules. Test the given schedule.” → definition, comparison table, conflict rules, graph with cycle/no-cycle conclusion.</li>
+    <li class="q">Likely questions: (i) Test the schedule for conflict serializability. (ii) Define conflict and conflict serializability. (iii) Why is every serial schedule serializable but not the reverse?</li>
+  </ul>
+</div>
+</section>

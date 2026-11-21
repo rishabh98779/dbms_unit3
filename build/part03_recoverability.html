@@ -1,0 +1,111 @@
+<!-- ================= 3 RECOVERABILITY ================= -->
+<section>
+<h2 class="sec"><span class="num">3</span><span class="mk">§S03</span> Recoverability <span class="sub">source 3.2.4</span></h2>
+
+<p>A transaction may fail (hardware failure, system crash, software issue) and must be rolled back. If another transaction already <b>read a value produced by the failed transaction</b>, that reader must be rolled back too. Recoverability classifies schedules by whether this rollback is still possible.</p>
+
+<div class="def">
+  <span class="lbl">Recoverable schedule — must learn</span>
+  <p>A schedule in which a transaction commits <b>only after every transaction whose changes it read has committed</b>. Formally: if T<sub>j</sub> reads a value written by T<sub>i</sub>, then <b>commit(T<sub>j</sub>) must occur after commit(T<sub>i</sub>)</b>.</p>
+</div>
+
+<table>
+  <thead><tr><th style="width:19%">Schedule type</th><th style="width:41%">Condition</th><th style="width:40%">What happens on failure of T<sub>i</sub></th></tr></thead>
+  <tbody>
+    <tr><td class="k">Irrecoverable</td><td>T<sub>j</sub> reads the value updated by T<sub>i</sub> and <b>commits before</b> T<sub>i</sub> commits/aborts.</td><td>T<sub>i</sub> fails later; T<sub>j</sub> has already committed and <b>cannot be rolled back</b> → its value is wrong forever.</td></tr>
+    <tr><td class="k">Recoverable with<br>cascading rollback</td><td>T<sub>j</sub> reads the uncommitted value of T<sub>i</sub>; <b>commit of T<sub>j</sub> is delayed</b> until T<sub>i</sub> commits or aborts.</td><td>T<sub>i</sub> aborts → T<sub>j</sub> is still uncommitted, so T<sub>j</sub> can also be rolled back (cascade).</td></tr>
+    <tr><td class="k">Cascadeless<br>(cascade-free)</td><td>T<sub>j</sub> reads the value of T<sub>i</sub> <b>only after T<sub>i</sub> has committed</b>.</td><td>No other transaction has read uncommitted data, so no cascading rollback is needed.</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h4>Same schedule, three timings</h4>
+<table style="font-size:7.5pt">
+  <thead><tr><th style="width:24%">Case</th><th style="width:38%">Commit order</th><th style="width:38%">Verdict</th></tr></thead>
+  <tbody>
+    <tr><td class="k">T2 commits early</td><td>T2 commits while T1 is still uncommitted; T1 fails later</td><td><b>Irrecoverable</b> — T2 cannot be rolled back</td></tr>
+    <tr><td class="k">T2 waits</td><td>T2's commit is delayed until T1 commits or aborts</td><td><b>Recoverable with cascading rollback</b></td></tr>
+    <tr><td class="k">T2 reads after T1 commits</td><td>T1 commits first, then T2 reads and commits</td><td><b>Cascadeless</b> — no cascade needed</td></tr>
+  </tbody>
+</table>
+</div>
+<div>
+<h4>How to check any schedule</h4>
+<p><b>Method 1 — serializability first.</b> If the schedule is conflict serializable, it is <b>surely recoverable</b>. If not, it <i>may or may not</i> be recoverable, so continue.</p>
+<p><b>Method 2 — dirty-read test.</b> A <b>dirty read</b> = reading a value written by an uncommitted transaction.</p>
+<ul class="tight">
+  <li>No dirty read ⇒ <b>surely recoverable</b>.</li>
+  <li>Dirty read exists: if the reader commits <b>before</b> the writer commits/aborts ⇒ <b>irrecoverable</b>; if the reader's commit is <b>delayed</b> until then ⇒ <b>recoverable</b>.</li>
+</ul>
+</div>
+</div>
+
+<div class="box tint">
+  <h4>Thumb rules to quote</h4>
+  <p style="margin-bottom:1mm">All conflict-serializable schedules are recoverable. All recoverable schedules may or may not be conflict serializable. Non-serializable schedules may or may not be consistent, and may or may not be recoverable.</p>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Recoverability</span>
+  <ul>
+    <li><b>2 marks:</b> define recoverable schedule; define dirty read; which schedule type needs no cascading rollback?</li>
+    <li><b>5 marks:</b> distinguish irrecoverable, cascading-recoverable and cascadeless schedules with one small schedule each.</li>
+    <li><b>10 marks:</b> given a schedule, test recoverability using both methods and justify with the commit order.</li>
+    <li class="q">Solved MCQ from the source: “Which scenario may lead to an irrecoverable error?” → <b>a transaction reads a data item after it is written by an uncommitted transaction</b> (option 4).</li>
+    <li class="q">Likely questions: (i) When is a schedule irrecoverable? (ii) Explain cascading rollback and cascadeless schedules. (iii) Is every serializable schedule recoverable?</li>
+  </ul>
+</div>
+</section>
+
+<!-- ================= 4 CONCURRENCY PROBLEMS ================= -->
+<section>
+<h2 class="sec"><span class="num">4</span><span class="mk">§S04</span> Why Concurrency Control? <span class="sub">source 3.2.5</span></h2>
+
+<div class="def">
+  <span class="lbl">Definitions</span>
+  <p><b>Concurrent execution:</b> in a multi-user system, several users execute operations on the same database at the same time, in an <b>interleaved</b> manner. <b>Concurrency control</b> is the management procedure that controls this concurrent execution so that consistency is preserved.</p>
+</div>
+
+<h3 style="break-after:auto">The four classic problems <span class="tag must">Must learn</span></h3>
+<table class="split">
+  <thead><tr><th style="width:17%">Problem</th><th style="width:11%">Conflict</th><th style="width:38%">What goes wrong</th><th style="width:34%">Source example (balance $300)</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Lost update</td><td>W–W</td><td>Two transactions read the same item and update it; the second write overwrites the first, so the first update is lost.</td><td>T<sub>X</sub> reads 300, computes 250; T<sub>Y</sub> reads 300, computes 400; T<sub>X</sub> writes 250; T<sub>Y</sub> writes 400 → 250 lost.</td></tr>
+    <tr><td class="k">Dirty read<br><span class="small">(uncommitted dependency)</span></td><td>W–R</td><td>A transaction reads an item updated by another transaction that <b>has not committed</b> and later rolls back.</td><td>T<sub>X</sub> writes 350; T<sub>Y</sub> reads 350; T<sub>X</sub> rolls back to 300 → T<sub>Y</sub> holds a value that never existed.</td></tr>
+    <tr><td class="k">Unrepeatable read<br><span class="small">(inconsistent retrieval)</span></td><td>W–R</td><td>Within one transaction, the same item is read twice and gives <b>two different values</b> because another transaction updated it in between.</td><td>T<sub>X</sub> reads 300; T<sub>Y</sub> updates to 400 and commits; T<sub>X</sub> reads again → 400.</td></tr>
+    <tr><td class="k">Incorrect summary<br><span class="small">(phantom / inconsistent analysis)</span></td><td>W–R</td><td>One transaction aggregates all instances of a repeated item while another updates some instances; the summary matches no consistent state.</td><td>Sum computed over rows while another transaction inserts/updates rows → total is neither the old nor the new total.</td></tr>
+  </tbody>
+</table>
+
+<div class="grid2">
+<div>
+<h3>Why allow concurrency at all?</h3>
+<ul class="tight">
+  <li><b>Improved throughput</b> — while one transaction waits for a disk page, the CPU executes another transaction (I/O overlaps CPU work). Throughput = transactions completed per unit time.</li>
+  <li><b>Reduced waiting time</b> — a short transaction interleaved with a long one finishes quickly instead of queueing behind it.</li>
+</ul>
+<p class="small">Interleaving must be controlled: uncontrolled interleaving of transactions on the <i>same</i> data item produces the four problems above. Transactions on <i>different</i> items may interleave freely.</p>
+</div>
+<div>
+<h3>What concurrency control must deliver</h3>
+<ul class="tight">
+  <li>Isolation through mutual exclusion between conflicting transactions.</li>
+  <li>Resolution of read–write and write–write conflicts.</li>
+  <li>Preservation of database consistency and <b>serializability</b>.</li>
+  <li>Atomicity, consistency, isolation, durability for concurrent execution.</li>
+</ul>
+<p><b>Protocol families:</b> lock-based · two-phase locking · timestamp-based · validation (optimistic).</p>
+</div>
+</div>
+
+<div class="exam">
+  <span class="lbl">Exam focus — Concurrency problems</span>
+  <ul>
+    <li><b>2 marks:</b> define concurrent execution; name the four problems with their conflict type.</li>
+    <li><b>5 marks:</b> explain any two problems with a timing table and the wrong value produced.</li>
+    <li><b>10 marks:</b> “Why is concurrency control needed? Explain the problems of concurrent execution with examples.” → definition, throughput/waiting-time benefits, four problems with numbers, list of protocols.</li>
+    <li class="q">Likely questions: (i) Differentiate lost update and dirty read. (ii) Explain unrepeatable read with an example. (iii) What is the incorrect summary problem?</li>
+  </ul>
+</div>
+</section>
